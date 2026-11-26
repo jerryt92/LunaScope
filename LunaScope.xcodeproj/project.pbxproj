@@ -475,7 +475,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Config/LunaScope.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 4N79Q8QY92;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -484,7 +484,9 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Config/Info.plist;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "LunaScope uses Bluetooth to find and pair with Luna cameras.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is used to display live video from an external USB camera or capture device connected to your iPad.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "LunaScope uses the camera network for live view, controls, and original photos.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location permission lets LunaScope read the name of your current Wi-Fi network to check your camera connection.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "LunaScope saves photos and videos you select from your camera to the Photos app.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "LunaScope uses photo library access to find or create the LunaScope album and save the photos and videos you select from your camera.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -527,7 +529,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Config/LunaScope.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 4N79Q8QY92;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -536,7 +538,9 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Config/Info.plist;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "LunaScope uses Bluetooth to find and pair with Luna cameras.";
+				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is used to display live video from an external USB camera or capture device connected to your iPad.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "LunaScope uses the camera network for live view, controls, and original photos.";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "Location permission lets LunaScope read the name of your current Wi-Fi network to check your camera connection.";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "LunaScope saves photos and videos you select from your camera to the Photos app.";
 				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "LunaScope uses photo library access to find or create the LunaScope album and save the photos and videos you select from your camera.";
 				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
@@ -636,7 +640,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 4N79Q8QY92;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/LunaScopeConnectionWidget-Info.plist";
@@ -657,7 +661,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = 4N79Q8QY92;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/LunaScopeConnectionWidget-Info.plist";

@@ -4,7 +4,11 @@
 
 "NSBluetoothAlwaysUsageDescription" = "LunaScope uses Bluetooth to find and pair with Luna cameras.";
 
+"NSCameraUsageDescription" = "Camera access is used to display live video from an external USB camera or capture device connected to your iPad.";
+
 "NSLocalNetworkUsageDescription" = "LunaScope uses the camera network for live view, controls, and original photos.";
+
+"NSLocationWhenInUseUsageDescription" = "Location permission lets LunaScope read the name of your current Wi-Fi network to check your camera connection.";
 
 "NSPhotoLibraryAddUsageDescription" = "LunaScope saves photos and videos you select from your camera to the Photos app.";
 

@@ -4,7 +4,11 @@
 
 "NSBluetoothAlwaysUsageDescription" = "LunaScope 使用蓝牙发现 Luna 相机，并请求相机配对。";
 
+"NSCameraUsageDescription" = "相机权限用于显示接入 iPad 的外接 USB 相机或视频采集设备的实时画面。";
+
 "NSLocalNetworkUsageDescription" = "LunaScope 通过相机网络接收实时画面、发送控制指令和读取原片。";
+
+"NSLocationWhenInUseUsageDescription" = "LunaScope 使用位置权限读取当前 Wi-Fi 网络名称，以确认相机连接。";
 
 "NSPhotoLibraryAddUsageDescription" = "LunaScope 将你从相机勾选的照片和视频保存到系统照片 App。";
 
