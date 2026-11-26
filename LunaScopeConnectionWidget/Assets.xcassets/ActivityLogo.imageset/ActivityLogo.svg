@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="216" height="216" viewBox="112 112 800 800">
+  <title>LunaScope</title>
+  <path fill="#52C2D0" d="M162.51 470 A352 352 0 0 1 861.49 470 H776.69 A268 268 0 0 0 247.31 470 Z"/>
+  <path fill="#3296A7" d="M162.51 554 A352 352 0 0 0 861.49 554 H776.69 A268 268 0 0 1 247.31 554 Z"/>
+  <g fill="#52C2D0">
+    <rect x="124" y="503" width="117" height="18" rx="9"/>
+    <rect x="783" y="503" width="117" height="18" rx="9"/>
+  </g>
+</svg>

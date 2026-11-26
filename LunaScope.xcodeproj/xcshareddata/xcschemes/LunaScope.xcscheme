@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Scheme LastUpgradeVersion="2710" version="1.7">
+   <BuildAction parallelizeBuildables="YES" buildImplicitDependencies="YES">
+      <BuildActionEntries>
+         <BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES">
+            <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="1E9D7F5530B6CD8F00218943" BuildableName="LunaScope.app" BlueprintName="LunaScope" ReferencedContainer="container:LunaScope.xcodeproj"/>
+         </BuildActionEntry>
+      </BuildActionEntries>
+   </BuildAction>
+   <TestAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.DebuggerFoundation.Launcher.LLDB" shouldUseLaunchSchemeArgsEnv="YES">
+      <Testables>
+         <TestableReference skipped="NO"><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="A6C13001000000000000003" BuildableName="LunaScopeTests.xctest" BlueprintName="LunaScopeTests" ReferencedContainer="container:LunaScope.xcodeproj"/></TestableReference>
+         <TestableReference skipped="NO"><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="A6C13002000000000000003" BuildableName="LunaScopeUITests.xctest" BlueprintName="LunaScopeUITests" ReferencedContainer="container:LunaScope.xcodeproj"/></TestableReference>
+      </Testables>
+   </TestAction>
+   <LaunchAction buildConfiguration="Debug" selectedDebuggerIdentifier="Xcode.DebuggerFoundation.Debugger.LLDB" selectedLauncherIdentifier="Xcode.DebuggerFoundation.Launcher.LLDB" launchStyle="0">
+      <BuildableProductRunnable runnableDebuggingMode="0"><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="1E9D7F5530B6CD8F00218943" BuildableName="LunaScope.app" BlueprintName="LunaScope" ReferencedContainer="container:LunaScope.xcodeproj"/></BuildableProductRunnable>
+   </LaunchAction>
+   <ProfileAction buildConfiguration="Release"><BuildableProductRunnable runnableDebuggingMode="0"><BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="1E9D7F5530B6CD8F00218943" BuildableName="LunaScope.app" BlueprintName="LunaScope" ReferencedContainer="container:LunaScope.xcodeproj"/></BuildableProductRunnable></ProfileAction>
+   <AnalyzeAction buildConfiguration="Debug"/>
+   <ArchiveAction buildConfiguration="Release" revealArchiveInOrganizer="YES"/>
+</Scheme>

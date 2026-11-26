@@ -1,0 +1,153 @@
+{
+  "schemaVersion": 1,
+  "id": "luna-ultra",
+  "displayName": "Luna Ultra",
+  "deviceModels": ["Insta360 Luna Ultra", "Luna Ultra"],
+  "bluetoothPrefixes": ["Insta360 Luna Ultra", "Luna Ultra"],
+  "modes": {
+    "video": {
+      "tracking": true,
+      "videoFormats": [210, 211, 154, 219, 212, 213, 49, 48, 24, 258, 92, 23, 220, 214, 440, 439, 438, 437, 436, 435, 434, 433, 248, 247, 246, 331, 245, 244, 243, 242, 53, 52, 29, 260, 81, 40, 150, 28, 26, 27, 126, 125, 124, 455, 454, 453, 452, 451, 450, 445, 444, 443, 468, 442, 441, 85, 71, 64, 298, 82, 68, 119, 120, 121, 448, 447, 446],
+      "zoom": {
+        "maximum": 15
+      },
+      "zoomOverrides": [
+        {
+          "formatIDs": [210, 211, 154, 219, 212, 213, 126, 125, 124],
+          "rule": {
+            "maximum": 6,
+            "recordingLensStarts": [1, 3]
+          }
+        },
+        {
+          "formatIDs": [220, 214, 434, 433, 243, 242, 150, 28, 26, 27],
+          "rule": {
+            "fixedStops": [1, 3]
+          }
+        }
+      ]
+    },
+    "pureVideo": {
+      "tracking": true,
+      "videoFormats": [49, 48, 24, 258, 92, 23, 248, 247, 246, 331, 245, 244, 53, 52, 29, 260, 81, 40, 455, 454, 453, 452, 451, 450, 445, 444, 443, 468, 442, 441, 85, 71, 64, 298, 82, 68],
+      "zoom": {
+        "maximum": 15
+      }
+    },
+    "slowMotion": {
+      "tracking": true,
+      "videoFormats": [220, 214, 434, 433, 243, 242, 150, 28, 26, 27],
+      "zoom": {
+        "fixedStops": [1, 3]
+      }
+    },
+    "timelapse": {
+      "videoFormats": [24, 246, 29],
+      "zoom": {
+        "fixedStops": [1, 3]
+      }
+    },
+    "timeShift": {
+      "tracking": true,
+      "videoFormats": [24, 246, 29],
+      "zoom": {
+        "fixedStops": [1, 3]
+      }
+    },
+    "photo": {
+      "tracking": true,
+      "zoom": {
+        "maximum": 15
+      }
+    },
+    "pano": {}
+  },
+  "photoFormats": [
+    {
+      "id": 34,
+      "ratio": "4:3",
+      "ratioCode": 4,
+      "quality": "standard",
+      "width": 3520,
+      "height": 2644
+    },
+    {
+      "id": 29,
+      "ratio": "16:9",
+      "ratioCode": 0,
+      "quality": "standard",
+      "width": 3840,
+      "height": 2160
+    },
+    {
+      "id": 30,
+      "ratio": "1:1",
+      "ratioCode": 1,
+      "quality": "standard",
+      "width": 3072,
+      "height": 3072
+    },
+    {
+      "id": 56,
+      "ratio": "3:4",
+      "ratioCode": 6,
+      "quality": "standard",
+      "width": 2304,
+      "height": 3072
+    },
+    {
+      "id": 54,
+      "ratio": "9:16",
+      "ratioCode": 2,
+      "quality": "standard",
+      "width": 1728,
+      "height": 3072
+    },
+    {
+      "id": 33,
+      "ratio": "4:3",
+      "ratioCode": 4,
+      "quality": "ultra",
+      "width": 7040,
+      "height": 5288
+    },
+    {
+      "id": 31,
+      "ratio": "16:9",
+      "ratioCode": 0,
+      "quality": "ultra",
+      "width": 7680,
+      "height": 4320
+    },
+    {
+      "id": 32,
+      "ratio": "1:1",
+      "ratioCode": 1,
+      "quality": "ultra",
+      "width": 6144,
+      "height": 6144
+    }
+  ],
+  "rawPhoto": true,
+  "livePhotoFormatIDs": [34, 29, 30, 56, 54],
+  "exposure": {
+    "iso": [100, 160, 200, 400, 800, 1600, 3200, 6400],
+    "isoMax": [400, 800, 1600, 3200, 6400],
+    "shutterDenominators": [8000, 6400, 5000, 4000, 3200, 2500, 2000, 1600, 1250, 1000, 800, 640, 500, 400, 320, 250, 200, 160, 125, 100, 80, 60, 50, 40, 30, 25, 15, 10, 5],
+    "longPhotoShutters": [0.25, 0.5, 1, 2, 4, 8, 15, 20, 25, 30],
+    "slowVideoShutter": { "formatIDs": [24, 453], "minimumFirmware": "1.1.15" }
+  },
+  "whiteBalance": {
+    "minimum": 2000,
+    "maximum": 10000,
+    "step": 100
+  },
+  "focusModes": [1, 3],
+  "colors": [1, 2, 5],
+  "colorOverrides": {
+    "27": [1]
+  },
+  "zoomStops": [1, 2, 3, 6, 12, 15],
+  "gimbalModes": [2, 3, 1, 4],
+  "detachableScreen": true
+}

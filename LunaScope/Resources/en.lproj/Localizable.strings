@@ -1,0 +1,521 @@
+/* LunaScope Localizable — English */
+
+"activity.camera.background" = "Connected in background";
+
+"activity.camera.connected" = "Camera connected";
+
+"activity.camera.connecting" = "Connecting to camera…";
+
+"activity.camera.continuous" = "Continuous capture in progress";
+
+"activity.camera.disconnected" = "Camera disconnected";
+
+"activity.camera.recording" = "Recording…";
+
+"activity.camera.reconnecting" = "Reconnecting to camera…";
+
+"activity.camera.stale" = "Open LunaScope to confirm the connection";
+
+"activity.camera.title" = "LunaScope";
+
+"activity.camera.verifying" = "Checking camera connection…";
+
+"album.badge.live" = "Live Photo";
+
+"album.badge.raw" = "RAW photo";
+
+"album.cancelSelection" = "Cancel";
+
+"album.count %@" = "%@ items";
+
+"album.date.unknown" = "Unknown date";
+
+"album.delete" = "Delete";
+
+"album.delete.confirmMessage %@" = "Delete %1$@ selected items from the camera. This cannot be undone.";
+
+"album.delete.confirmOne" = "Delete this item from the camera. This cannot be undone.";
+
+"album.delete.confirmTitle" = "Delete from camera?";
+
+"album.deletePartial %@ %@" = "Deleted %1$@, %2$@ failed";
+
+"album.deleting %@ %@" = "Deleting %1$@ of %2$@";
+
+"album.deselectAll" = "Deselect all";
+
+"album.empty" = "No files in this storage";
+
+"album.error.busy" = "The camera is busy.";
+
+"album.error.disconnected" = "The camera connection was lost.";
+
+"album.error.load" = "Could not read the camera album";
+
+"album.loading" = "Reading album…";
+
+"album.preview.busy" = "Camera busy";
+
+"album.preview.error" = "Couldn’t load this preview.";
+
+"album.preview.info" = "Media information";
+
+"album.preview.livePressHint" = "Touch and hold to start Live Photo playback";
+
+"album.preview.mute" = "Mute";
+
+"album.preview.pause" = "Pause";
+
+"album.preview.play" = "Play";
+
+"album.preview.unmute" = "Unmute";
+
+"album.select" = "Select";
+
+"album.selectAll" = "Select all";
+
+"album.selected %@" = "%1$@ selected";
+
+"album.storage" = "Camera storage";
+
+"album.storage.internal" = "Internal";
+
+"album.storage.noSD" = "No SD card inserted";
+
+"album.storage.sd" = "SD card";
+
+"album.title" = "Camera album";
+
+"common.cancel" = "Cancel";
+
+"common.close" = "Close";
+
+"common.done" = "Done";
+
+"common.retry" = "Retry";
+
+"connection.background.detail" = "LunaScope keeps the connection when possible and shows status in a Live Activity. Recording and continuous capture renew background time; the app rechecks the link when you return.";
+
+"connection.devices.title" = "Nearby cameras";
+
+"connection.status.verifying" = "Checking camera connection…";
+
+"console.action.retry" = "Retry connection";
+
+"console.capture.continuousStart" = "Start continuous capture";
+
+"console.capture.continuousStop" = "Stop continuous capture";
+
+"console.capture.photo" = "Take photo";
+
+"console.capture.record" = "Record";
+
+"console.capture.stop" = "Stop recording";
+
+"console.capture.working" = "Working";
+
+
+
+"console.connection.disconnect" = "Disconnect";
+
+"console.connection.firmware %@ %@" = "%1$@ · Firmware %2$@";
+
+"console.connection.instructions" = "Turn on the camera and stay nearby. For the first connection, approve pairing on the camera.";
+
+"console.connection.scan" = "Find camera";
+
+"console.connection.selectHint" = "Connect to this camera";
+
+"console.error.albumDenied" = "Photo add permission is off. Allow LunaScope to add photos in Settings.";
+
+"console.error.albumDownload" = "Could not download the photo from the camera";
+
+"console.error.albumSave" = "Could not save to Photos";
+
+"console.error.busy" = "The camera is busy taking a photo. Try again later.";
+
+"console.error.capture" = "The camera reported a capture failure.";
+
+"console.error.connection" = "Connection failed";
+
+"console.error.continuous" = "Continuous capture failed";
+
+"console.error.exposure" = "Could not change exposure";
+
+"console.error.flip" = "Could not flip gimbal";
+
+"console.error.format" = "Could not change the capture format";
+
+"console.error.gimbalAsleep" = "The gimbal is still asleep.";
+
+"console.error.gimbalFlipState" = "The camera did not confirm the gimbal flip state.";
+
+"console.error.gimbalMode" = "Could not change gimbal mode";
+
+"console.error.gimbalPosition" = "The gimbal is moving, outside its range, or did not confirm arrival.";
+
+"console.error.gimbalRestore" = "Could not restore the saved gimbal position";
+
+"console.error.gimbalSave" = "Could not save the gimbal position";
+
+"console.error.livePhoto" = "Could not change Live Photo";
+
+"console.error.mode" = "Could not change shooting mode";
+
+"console.error.modeChanged" = "The camera shooting mode changed during this operation.";
+
+"console.error.photo" = "Could not take photo";
+
+"console.error.presetApply" = "The preset could not be fully applied. Using the camera’s current settings";
+
+"console.error.presetDelete" = "Could not delete the preset";
+
+"console.error.presetSave" = "Could not save the parameter preset";
+
+"console.error.preview" = "Could not restore preview";
+
+"console.error.raw" = "Could not change the photo format";
+
+"console.error.readback" = "The camera did not confirm the result.";
+
+"console.error.recenter" = "Could not recenter gimbal";
+
+"console.error.recordStart" = "Could not start recording";
+
+"console.error.recordStop" = "Could not stop recording";
+
+"console.error.refused" = "The camera refused this operation.";
+
+"console.error.scan" = "Camera search failed";
+
+"console.error.setting" = "Could not change setting";
+
+"console.error.unsupported" = "This setting is unavailable in the current mode.";
+
+"console.error.wake" = "Could not wake the gimbal";
+
+"console.format.fps %@" = "%1$@ fps";
+
+"console.format.frameRate" = "Frame rate";
+
+"console.format.photoFormat" = "Photo format";
+
+"console.format.photoSize" = "Photo Size";
+"console.format.quality" = "Quality";
+
+"console.format.ratio" = "Aspect ratio";
+
+"console.format.resolution" = "Resolution";
+
+"console.format.standardPhoto" = "Standard photo";
+
+"console.format.ultraPhoto" = "UltraPhoto";
+
+"console.gimbal.center" = "Recenter";
+
+"console.gimbal.down" = "Down";
+
+"console.gimbal.flip" = "Flip";
+
+"console.gimbal.joystick" = "Gimbal joystick";
+
+"console.gimbal.joystickHint" = "Drag to move the gimbal. Release to stop.";
+
+"console.gimbal.left" = "Left";
+
+"console.gimbal.lock" = "Lock";
+
+"console.gimbal.mode" = "Gimbal mode";
+
+"console.gimbal.restorePosition" = "Restore position";
+
+"console.gimbal.right" = "Right";
+
+"console.gimbal.rollLock" = "Roll Lock";
+
+"console.gimbal.rollTiltLock" = "Roll & Tilt Lock";
+
+"console.gimbal.savePosition" = "Save position";
+
+"console.gimbal.up" = "Up";
+
+"console.gimbal.vertical" = "Vertical stabilization";
+
+"console.gimbal.wake" = "Wake gimbal";
+
+"console.interval.custom" = "Custom";
+
+"console.interval.customHint" = "Enter a value from 1 second to 60 minutes.";
+
+"console.interval.customPlaceholder" = "Interval";
+
+"console.interval.customTitle" = "Custom interval";
+
+"console.interval.minutes %lld" = "%lld min";
+
+"console.interval.seconds %lld" = "%lld s";
+
+"console.interval.secondsText %@" = "%@ s";
+
+"console.interval.title" = "Shoot interval";
+
+"console.interval.unit" = "Unit";
+
+"console.interval.unit.minutes" = "Minutes";
+
+"console.interval.unit.seconds" = "Seconds";
+
+"console.livePhoto.off" = "Off";
+
+"console.livePhoto.on" = "On";
+
+"console.livePhoto.title" = "Live Photo";
+"console.livePhoto.switchToStandard" = "Ultra Photo doesn’t support Live Photo, so the camera switched to Standard Photo.";
+"console.livePhoto.turnedOffForFormat" = "This photo size doesn’t support Live Photo, so Live Photo was turned off.";
+
+"console.mode.continuousPhoto" = "Continuous";
+
+"console.mode.pano" = "Panorama";
+
+"console.mode.photo" = "Single photo";
+
+"console.mode.photoFamily" = "Photo modes";
+
+"console.mode.pureVideo" = "PureVideo";
+
+"console.mode.slowMotion" = "Slow motion";
+
+"console.mode.switch" = "Mode";
+
+"console.mode.timeShift" = "TimeShift";
+
+"console.mode.timelapse" = "Timelapse";
+
+"console.mode.video" = "Video";
+
+"console.mode.videoFamily" = "Video modes";
+
+"console.notice.acknowledged" = "The camera acknowledged the shutter. Check its album for the photo.";
+
+"console.notice.continuousStopped" = "Continuous capture stopped.";
+
+"console.notice.disconnected %@" = "The camera disconnected. %1$@";
+
+"console.notice.dropped" = "The connection keeps dropping. Check that the camera is on and nearby, then retry.";
+
+"console.notice.gimbalAwake" = "Gimbal is awake.";
+
+"console.notice.gimbalLimit" = "Gimbal has reached its limit.";
+
+"console.notice.gimbalFlipMismatch" = "Gimbal flip does not match the saved position. Flip it yourself, then restore again.";
+
+"console.notice.gimbalRestored" = "Gimbal position restored.";
+
+"console.notice.gimbalRestoredAnglesOnly" = "Gimbal position restored. The saved position has no flip state.";
+
+"console.notice.gimbalSaved" = "Gimbal position saved.";
+
+"console.notice.gimbalSavedAnglesOnly" = "Gimbal position saved. The camera did not report its flip state.";
+
+"console.notice.network" = "Allow LunaScope to access the local network in Settings, then retry.";
+
+"console.notice.noCamera" = "No supported Luna camera was found. Wake the camera, turn on Bluetooth, and move closer.";
+
+"console.notice.presetApplied" = "Parameter preset applied.";
+
+"console.notice.presetSaved" = "Parameter preset saved.";
+
+"console.notice.reconnected" = "Reconnected to the camera.";
+
+"console.notice.reconnecting %@" = "Connection lost. Reconnecting… %1$@";
+
+"console.notice.reconnectingGeneric" = "Reconnecting to the camera…";
+
+"console.notice.saved" = "The photo is saved to the camera.";
+
+"console.notice.shutter" = "The camera acknowledged the shutter and is processing the photo.";
+
+"console.notice.simulator" = "Find and pair a Luna camera on a physical iPhone or iPad.";
+
+"console.battery.charging %@" = "Charging · %@";
+
+"console.battery.charging %@" = "Charging · %@";
+
+"console.presets.countFormat" = "%lld total";
+
+"console.presets.delete" = "Delete";
+
+"console.presets.detail" = "Tap a preset to close and apply it in order. Long-press to rename. Drag the handles to reorder. Use the delete control to remove.";
+
+"console.presets.empty" = "No saved presets";
+
+"console.presets.formatCode %lld" = "Format %lld";
+
+"console.presets.name" = "Optional name";
+
+"console.presets.nameTitle" = "Name this preset";
+
+"console.presets.rename" = "Rename";
+
+"console.presets.renameTitle" = "Rename preset";
+
+"console.presets.save" = "Save current settings";
+
+"console.presets.title" = "Parameter presets";
+
+"console.preview.cancelTracking" = "Stop Tracking";
+
+"console.preview.exitFullscreen" = "Exit Full-screen Preview";
+
+"console.preview.focusCenter" = "Focus at Center";
+
+"console.preview.focusFailed" = "Could not focus";
+
+"console.preview.fullscreen" = "Full-screen Preview";
+
+"console.preview.hideFullscreenControls" = "Hide Full-Screen Controls";
+
+"console.preview.interrupted" = "Preview interrupted";
+
+
+"console.preview.pipActive" = "Preview is in Picture in Picture";
+
+"console.preview.pipFailed" = "Could not start Picture in Picture";
+
+"console.preview.pipStart" = "Start Picture in Picture";
+
+"console.preview.pipStop" = "Stop Picture in Picture";
+
+"console.preview.pipUnavailable" = "iOS did not make Picture in Picture available for this preview. Try again while the live view is playing.";
+
+"console.preview.restart" = "Restart preview";
+
+"console.preview.showFullscreenControls" = "Show Full-Screen Controls";
+
+"console.preview.title" = "Live view";
+
+"console.preview.trackingFailed" = "Could not control tracking";
+
+"console.preview.waiting" = "Waiting for camera preview";
+
+"console.settings.auto" = "Auto";
+
+"console.settings.color" = "Color profile";
+
+"console.settings.colorStandard" = "Standard";
+
+"console.settings.colorVivid" = "Vivid";
+
+"console.settings.continuousAF" = "Continuous AF";
+
+"console.settings.exposureControls" = "Shooting Parameters";
+"console.exposure.level" = "Parameter controls";
+"console.exposure.basic" = "Standard";
+"console.exposure.professional" = "Pro";
+"console.exposure.reset" = "Reset selected parameter";
+"console.settings.exposureBias" = "EV";
+"console.settings.metering" = "Metering";
+"console.settings.facePriority" = "Face Priority";
+"console.settings.matrixMetering" = "Matrix";
+
+"console.settings.focus" = "Focus";
+
+"console.settings.iso" = "ISO";
+
+"console.settings.isoMax %lld" = "%lld Max";
+
+"console.settings.isoMax %llu" = "%llu Max";
+
+"console.settings.productFocus" = "Product showcase";
+
+"console.settings.retrySync" = "Retry";
+
+"console.settings.seconds %@" = "%1$@ s";
+
+"console.settings.shutter" = "Shutter";
+
+"console.settings.singleAF" = "Single AF";
+
+"console.settings.useCamera" = "Use camera settings";
+
+"console.settings.whiteBalance" = "White balance";
+
+"console.settings.zoom" = "Zoom";
+
+"console.state.awaitingApproval" = "Approve pairing on the camera";
+
+"console.state.connecting" = "Connecting over Bluetooth";
+
+"console.state.idle" = "Disconnected";
+
+"console.state.joiningWiFi" = "Joining camera Wi-Fi";
+
+"console.state.negotiating" = "Verifying camera";
+
+"console.state.openingVideo" = "Opening camera connection";
+
+"console.state.readingWiFi" = "Reading camera Wi-Fi";
+
+"console.state.scanning" = "Finding nearby cameras";
+
+"console.state.streaming" = "Connected";
+
+"feature.connection.title" = "Camera Connection";
+
+"feature.console.title" = "Shoot";
+
+"permissions.action.settings" = "Open Settings";
+
+"permissions.status.unknown" = "Unavailable";
+
+"settings.about.licenses" = "Open Source Licenses";
+
+"settings.about.privacy" = "Privacy Policy";
+
+"settings.about.title" = "About";
+
+"settings.about.version" = "Version";
+
+"settings.advanced.title" = "Advanced";
+
+"settings.command.confirmTimeout" = "Confirm timeout";
+
+"settings.command.confirmTimeoutValue %lld" = "%lld s";
+
+"settings.command.detail" = "Automatic retries after a failed setting write, and how long to wait for the camera to confirm the change.";
+
+"settings.command.retryLimit" = "Retry count";
+
+"settings.command.title" = "Setting writes";
+
+"settings.diagnostics.create" = "Prepare archive";
+
+"settings.diagnostics.detail" = "The archive contains recent app events and device information.";
+
+"settings.diagnostics.error" = "Could not prepare diagnostics";
+
+"settings.diagnostics.preparing" = "Preparing logs";
+
+"settings.diagnostics.share" = "Share archive";
+
+"settings.diagnostics.title" = "Diagnostic logs";
+
+"settings.licenses.apache" = "Apache License 2.0";
+
+"settings.licenses.mit" = "MIT License";
+
+"settings.licenses.notice" = "Copyright Notices";
+
+"settings.licenses.thirdPartyNotices" = "Third-Party Notices";
+
+"settings.licenses.unavailable" = "The license text could not be loaded.";
+
+"settings.licenses.usage.kcp" = "Bundled with the camera transport module to provide reliable UDP delivery for the detachable screen’s control channel.";
+
+"settings.licenses.usage.openCine" = "LunaScope uses OpenCine for camera connections, shooting controls, live preview, and album thumbnails. LunaScopeTransport adapts its camera integration for Insta360 Luna series cameras.";
+
+"tab.album" = "Album";
+
+"tab.connection" = "Connect";
+
+"tab.settings" = "Settings";

@@ -1,0 +1,11 @@
+/* LunaScope InfoPlist — Simplified Chinese */
+
+"CFBundleName" = "LunaScope";
+
+"NSBluetoothAlwaysUsageDescription" = "LunaScope 使用蓝牙发现 Luna 相机，并请求相机配对。";
+
+"NSLocalNetworkUsageDescription" = "LunaScope 通过相机网络接收实时画面、发送控制指令和读取原片。";
+
+"NSPhotoLibraryAddUsageDescription" = "LunaScope 将你从相机勾选的照片和视频保存到系统照片 App。";
+
+"NSPhotoLibraryUsageDescription" = "LunaScope 需要照片图库权限来查找或创建 LunaScope 相册，并保存你从相机勾选的照片和视频。";

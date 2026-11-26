@@ -1,0 +1,521 @@
+/* LunaScope Localizable — Simplified Chinese */
+
+"activity.camera.background" = "已在后台保持连接";
+
+"activity.camera.connected" = "相机已连接";
+
+"activity.camera.connecting" = "正在连接相机…";
+
+"activity.camera.continuous" = "连续拍摄进行中";
+
+"activity.camera.disconnected" = "相机连接已断开";
+
+"activity.camera.recording" = "正在录像…";
+
+"activity.camera.reconnecting" = "正在重新连接相机…";
+
+"activity.camera.stale" = "打开 LunaScope 确认连接";
+
+"activity.camera.title" = "LunaScope";
+
+"activity.camera.verifying" = "正在确认相机连接…";
+
+"album.badge.live" = "实况照片";
+
+"album.badge.raw" = "RAW 照片";
+
+"album.cancelSelection" = "取消";
+
+"album.count %@" = "%@ 项";
+
+"album.date.unknown" = "未知日期";
+
+"album.delete" = "删除";
+
+"album.delete.confirmMessage %@" = "将从相机删除已选的 %1$@ 项，此操作无法撤销。";
+
+"album.delete.confirmOne" = "将从相机删除此项，此操作无法撤销。";
+
+"album.delete.confirmTitle" = "从相机删除？";
+
+"album.deletePartial %@ %@" = "已删除 %1$@ 项，%2$@ 项失败";
+
+"album.deleting %@ %@" = "正在删除 %1$@/%2$@";
+
+"album.deselectAll" = "取消全选";
+
+"album.empty" = "这个存储里没有文件";
+
+"album.error.busy" = "相机正忙。";
+
+"album.error.disconnected" = "相机连接已断开。";
+
+"album.error.load" = "无法读取相机相册";
+
+"album.loading" = "正在读取相册…";
+
+"album.preview.busy" = "相机忙";
+
+"album.preview.error" = "无法加载此预览。";
+
+"album.preview.info" = "媒体信息";
+
+"album.preview.livePressHint" = "长按开始播放实况";
+
+"album.preview.mute" = "静音";
+
+"album.preview.pause" = "暂停";
+
+"album.preview.play" = "播放";
+
+"album.preview.unmute" = "取消静音";
+
+"album.select" = "选择";
+
+"album.selectAll" = "全选";
+
+"album.selected %@" = "已选 %1$@ 项";
+
+"album.storage" = "相机存储";
+
+"album.storage.internal" = "内部存储";
+
+"album.storage.noSD" = "未插入 SD 卡";
+
+"album.storage.sd" = "SD 卡";
+
+"album.title" = "相机相册";
+
+"common.cancel" = "取消";
+
+"common.close" = "关闭";
+
+"common.done" = "完成";
+
+"common.retry" = "重试";
+
+"connection.background.detail" = "切到后台时会尽量保持连接，并用实时活动显示状态。录像或连拍进行中会优先续约后台时间；返回时会再确认连接。";
+
+"connection.devices.title" = "附近的相机";
+
+"connection.status.verifying" = "正在确认相机连接…";
+
+"console.action.retry" = "重试连接";
+
+"console.capture.continuousStart" = "开始连续拍摄";
+
+"console.capture.continuousStop" = "停止连续拍摄";
+
+"console.capture.photo" = "拍照";
+
+"console.capture.record" = "录制";
+
+"console.capture.stop" = "停止录制";
+
+"console.capture.working" = "正在处理";
+
+
+
+"console.connection.disconnect" = "断开";
+
+"console.connection.firmware %@ %@" = "%1$@ · 固件 %2$@";
+
+"console.connection.instructions" = "打开相机并靠近。首次连接时，请在相机上同意配对。";
+
+"console.connection.scan" = "搜索相机";
+
+"console.connection.selectHint" = "连接此相机";
+
+"console.error.albumDenied" = "未获得照片添加权限，请在系统设置中允许 LunaScope 添加照片。";
+
+"console.error.albumDownload" = "无法从相机下载照片";
+
+"console.error.albumSave" = "无法保存到系统照片";
+
+"console.error.busy" = "相机正在拍摄，请稍后再试。";
+
+"console.error.capture" = "相机报告拍摄失败。";
+
+"console.error.connection" = "连接失败";
+
+"console.error.continuous" = "连续拍摄失败";
+
+"console.error.exposure" = "无法调整曝光";
+
+"console.error.flip" = "云台翻转失败";
+
+"console.error.format" = "无法修改拍摄规格";
+
+"console.error.gimbalAsleep" = "云台仍在休眠。";
+
+"console.error.gimbalFlipState" = "相机未确认云台翻转状态。";
+
+"console.error.gimbalMode" = "设置云台模式失败";
+
+"console.error.gimbalPosition" = "云台正在移动、角度超出范围，或相机尚未确认到位。";
+
+"console.error.gimbalRestore" = "无法恢复云台位置";
+
+"console.error.gimbalSave" = "无法记忆云台位置";
+
+"console.error.livePhoto" = "无法切换实况照片";
+
+"console.error.mode" = "切换拍摄模式失败";
+
+"console.error.modeChanged" = "操作期间相机拍摄模式发生了变化。";
+
+"console.error.photo" = "拍照失败";
+
+"console.error.presetApply" = "未能完整套用预设，已改用相机当前参数";
+
+"console.error.presetDelete" = "无法删除参数预设";
+
+"console.error.presetSave" = "无法保存参数预设";
+
+"console.error.preview" = "无法恢复预览";
+
+"console.error.raw" = "无法修改照片格式";
+
+"console.error.readback" = "未收到相机对结果的确认。";
+
+"console.error.recenter" = "云台回中失败";
+
+"console.error.recordStart" = "开始录制失败";
+
+"console.error.recordStop" = "停止录制失败";
+
+"console.error.refused" = "相机拒绝了此操作。";
+
+"console.error.scan" = "搜索失败";
+
+"console.error.setting" = "设置失败";
+
+"console.error.unsupported" = "当前模式下无法应用这个参数。";
+
+"console.error.wake" = "无法唤醒云台";
+
+"console.format.fps %@" = "%1$@ 帧/秒";
+
+"console.format.frameRate" = "帧率";
+
+"console.format.photoFormat" = "照片格式";
+
+"console.format.photoSize" = "照片尺寸";
+"console.format.quality" = "画质";
+
+"console.format.ratio" = "画面比例";
+
+"console.format.resolution" = "分辨率";
+
+"console.format.standardPhoto" = "标准照片";
+
+"console.format.ultraPhoto" = "超清照片";
+
+"console.gimbal.center" = "回中";
+
+"console.gimbal.down" = "向下";
+
+"console.gimbal.flip" = "翻转";
+
+"console.gimbal.joystick" = "云台摇杆";
+
+"console.gimbal.joystickHint" = "拖动控制云台方向，松手停止";
+
+"console.gimbal.left" = "向左";
+
+"console.gimbal.lock" = "锁定";
+
+"console.gimbal.mode" = "云台模式";
+
+"console.gimbal.restorePosition" = "恢复上次位置";
+
+"console.gimbal.right" = "向右";
+
+"console.gimbal.rollLock" = "横滚锁定";
+
+"console.gimbal.rollTiltLock" = "横滚与俯仰锁定";
+
+"console.gimbal.savePosition" = "记忆云台位置";
+
+"console.gimbal.up" = "向上";
+
+"console.gimbal.vertical" = "竖拍增稳";
+
+"console.gimbal.wake" = "唤醒云台";
+
+"console.interval.custom" = "自定义";
+
+"console.interval.customHint" = "可输入 1 秒到 60 分钟之间的间隔。";
+
+"console.interval.customPlaceholder" = "间隔";
+
+"console.interval.customTitle" = "自定义间隔";
+
+"console.interval.minutes %lld" = "%lld 分钟";
+
+"console.interval.seconds %lld" = "%lld 秒";
+
+"console.interval.secondsText %@" = "%@ 秒";
+
+"console.interval.title" = "拍摄间隔";
+
+"console.interval.unit" = "单位";
+
+"console.interval.unit.minutes" = "分钟";
+
+"console.interval.unit.seconds" = "秒";
+
+"console.livePhoto.off" = "关闭";
+
+"console.livePhoto.on" = "开启";
+
+"console.livePhoto.title" = "实况照片";
+"console.livePhoto.switchToStandard" = "超清不支持实况，已自动切换为标准照片。";
+"console.livePhoto.turnedOffForFormat" = "所选规格不支持实况，已自动关闭实况照片。";
+
+"console.mode.continuousPhoto" = "连续拍摄";
+
+"console.mode.pano" = "全景照片";
+
+"console.mode.photo" = "单张照片";
+
+"console.mode.photoFamily" = "照片模式";
+
+"console.mode.pureVideo" = "夜景视频";
+
+"console.mode.slowMotion" = "慢动作";
+
+"console.mode.switch" = "拍摄模式";
+
+"console.mode.timeShift" = "移动延时";
+
+"console.mode.timelapse" = "延时摄影";
+
+"console.mode.video" = "视频";
+
+"console.mode.videoFamily" = "视频模式";
+
+"console.notice.acknowledged" = "快门指令已确认，可在相机相册查看照片。";
+
+"console.notice.continuousStopped" = "连续拍摄已停止。";
+
+"console.notice.disconnected %@" = "相机连接已断开。%1$@";
+
+"console.notice.dropped" = "连接反复中断。请确认相机已开机且在附近，然后重试。";
+
+"console.notice.gimbalAwake" = "云台已唤醒。";
+
+"console.notice.gimbalLimit" = "云台已达到限位。";
+
+"console.notice.gimbalFlipMismatch" = "云台翻转方向与记忆不一致，请先自行翻转后再恢复。";
+
+"console.notice.gimbalRestored" = "已恢复云台位置。";
+
+"console.notice.gimbalRestoredAnglesOnly" = "已恢复云台位置。此记录没有翻转状态。";
+
+"console.notice.gimbalSaved" = "已记忆云台位置。";
+
+"console.notice.gimbalSavedAnglesOnly" = "已记忆云台位置。相机未回报翻转状态。";
+
+"console.notice.network" = "请在系统设置中允许 LunaScope 访问本地网络，然后重试。";
+
+"console.notice.noCamera" = "未找到受支持的 Luna 相机。请唤醒相机，开启蓝牙并靠近后重试。";
+
+"console.notice.presetApplied" = "参数预设已套用。";
+
+"console.notice.presetSaved" = "参数预设已保存。";
+
+"console.notice.reconnected" = "已重新连接相机。";
+
+"console.notice.reconnecting %@" = "连接中断，正在重连…%1$@";
+
+"console.notice.reconnectingGeneric" = "正在重新连接相机…";
+
+"console.notice.saved" = "照片已保存到相机。";
+
+"console.notice.shutter" = "相机已响应快门，正在等待拍摄结果。";
+
+"console.notice.simulator" = "请在 iPhone 或 iPad 真机上搜索并配对 Luna 相机。";
+
+"console.battery.charging %@" = "充电中 · %@";
+
+"console.battery.charging %@" = "充电中 · %@";
+
+"console.presets.countFormat" = "共 %lld 项";
+
+"console.presets.delete" = "删除";
+
+"console.presets.detail" = "点击预设后关闭并按序套用；长按可重命名，拖动手柄可调整顺序，点左侧可删除。";
+
+"console.presets.empty" = "暂无参数预设";
+
+"console.presets.formatCode %lld" = "规格 %lld";
+
+"console.presets.name" = "名称（可留空）";
+
+"console.presets.nameTitle" = "命名参数预设";
+
+"console.presets.rename" = "重命名";
+
+"console.presets.renameTitle" = "重命名参数预设";
+
+"console.presets.save" = "保存当前参数";
+
+"console.presets.title" = "参数记忆";
+
+"console.preview.cancelTracking" = "停止追踪";
+
+"console.preview.exitFullscreen" = "退出全屏预览";
+
+"console.preview.focusCenter" = "对焦到画面中央";
+
+"console.preview.focusFailed" = "对焦失败";
+
+"console.preview.fullscreen" = "全屏预览";
+
+"console.preview.hideFullscreenControls" = "隐藏全屏控件";
+
+"console.preview.interrupted" = "画面已中断";
+
+
+"console.preview.pipActive" = "预览正在画中画中播放";
+
+"console.preview.pipFailed" = "无法开启画中画";
+
+"console.preview.pipStart" = "开启画中画";
+
+"console.preview.pipStop" = "关闭画中画";
+
+"console.preview.pipUnavailable" = "iOS 暂未允许此预览进入画中画。请在实时画面播放时重试。";
+
+"console.preview.restart" = "重启预览";
+
+"console.preview.showFullscreenControls" = "显示全屏控件";
+
+"console.preview.title" = "实时取景";
+
+"console.preview.trackingFailed" = "追踪操作失败";
+
+"console.preview.waiting" = "正在等待相机画面";
+
+"console.settings.auto" = "自动";
+
+"console.settings.color" = "色彩模式";
+
+"console.settings.colorStandard" = "标准";
+
+"console.settings.colorVivid" = "鲜艳";
+
+"console.settings.continuousAF" = "连续 AF";
+
+"console.settings.exposureControls" = "拍摄参数";
+"console.exposure.level" = "参数控制";
+"console.exposure.basic" = "普通";
+"console.exposure.professional" = "专业";
+"console.exposure.reset" = "重置当前参数";
+"console.settings.exposureBias" = "EV";
+"console.settings.metering" = "测光";
+"console.settings.facePriority" = "人脸优先";
+"console.settings.matrixMetering" = "矩阵测光";
+
+"console.settings.focus" = "对焦";
+
+"console.settings.iso" = "ISO";
+
+"console.settings.isoMax %lld" = "%lld Max";
+
+"console.settings.isoMax %llu" = "%llu Max";
+
+"console.settings.productFocus" = "展示对焦";
+
+"console.settings.retrySync" = "重试";
+
+"console.settings.seconds %@" = "%1$@ 秒";
+
+"console.settings.shutter" = "快门";
+
+"console.settings.singleAF" = "单次 AF";
+
+"console.settings.useCamera" = "采用相机设置";
+
+"console.settings.whiteBalance" = "白平衡";
+
+"console.settings.zoom" = "变焦";
+
+"console.state.awaitingApproval" = "请在相机屏幕上确认配对";
+
+"console.state.connecting" = "正在连接蓝牙";
+
+"console.state.idle" = "未连接";
+
+"console.state.joiningWiFi" = "正在加入相机 Wi-Fi";
+
+"console.state.negotiating" = "正在验证相机";
+
+"console.state.openingVideo" = "正在建立相机连接";
+
+"console.state.readingWiFi" = "正在读取相机 Wi-Fi";
+
+"console.state.scanning" = "正在搜索附近的相机";
+
+"console.state.streaming" = "已连接";
+
+"feature.connection.title" = "相机连接";
+
+"feature.console.title" = "拍摄";
+
+"permissions.action.settings" = "打开系统设置";
+
+"permissions.status.unknown" = "暂无";
+
+"settings.about.licenses" = "开源许可";
+
+"settings.about.privacy" = "隐私政策";
+
+"settings.about.title" = "关于";
+
+"settings.about.version" = "版本";
+
+"settings.advanced.title" = "高级设置";
+
+"settings.command.confirmTimeout" = "等待确认超时";
+
+"settings.command.confirmTimeoutValue %lld" = "%lld 秒";
+
+"settings.command.detail" = "参数下发失败时的自动重试次数，以及等待相机回读确认的最长时间。";
+
+"settings.command.retryLimit" = "失败重试次数";
+
+"settings.command.title" = "参数下发";
+
+"settings.diagnostics.create" = "生成诊断归档";
+
+"settings.diagnostics.detail" = "归档包含近期应用事件和设备信息。";
+
+"settings.diagnostics.error" = "无法生成诊断归档";
+
+"settings.diagnostics.preparing" = "正在整理日志";
+
+"settings.diagnostics.share" = "分享归档";
+
+"settings.diagnostics.title" = "诊断日志";
+
+"settings.licenses.apache" = "Apache 许可证 2.0";
+
+"settings.licenses.mit" = "MIT 许可证";
+
+"settings.licenses.notice" = "版权声明";
+
+"settings.licenses.thirdPartyNotices" = "第三方声明";
+
+"settings.licenses.unavailable" = "无法加载许可文本。";
+
+"settings.licenses.usage.kcp" = "随相机通信模块提供，用于可拆卸屏幕控制通道的 UDP 可靠传输。";
+
+"settings.licenses.usage.openCine" = "LunaScope 使用 OpenCine 实现相机连接、拍摄参数控制、实时取景和相册缩略图处理。LunaScopeTransport 在其相机适配代码基础上接入影石360 Luna 系列相机。";
+
+"tab.album" = "相册";
+
+"tab.connection" = "连接";
+
+"tab.settings" = "设置";

@@ -1,0 +1,14 @@
+{
+  "originHash" : "e38a8895a4a436af87af42883b7cf68ba8dc72246ab81e851f74f09c1745ef12",
+  "pins" : [
+    {
+      "identity" : "opencine",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/erik-sutton95/OpenCine.git",
+      "state" : {
+        "revision" : "80247e711f82520f64fb2d35420eba78ca353268"
+      }
+    }
+  ],
+  "version" : 3
+}

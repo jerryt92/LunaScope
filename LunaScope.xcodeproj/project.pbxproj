@@ -1,0 +1,763 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 110;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A6C110010000000000000001 /* LunaTransportApple in Frameworks */ = {isa = PBXBuildFile; productRef = A6C110020000000000000001 /* LunaTransportApple */; };
+		A6C110010000000000000002 /* LunaTransportProtocol in Frameworks */ = {isa = PBXBuildFile; productRef = A6C110020000000000000002 /* LunaTransportProtocol */; };
+		A6C110010000000000000003 /* OpenCineCore in Frameworks */ = {isa = PBXBuildFile; productRef = A6C110020000000000000003 /* OpenCineCore */; };
+		A6C110010000000000000004 /* OpenCineApple in Frameworks */ = {isa = PBXBuildFile; productRef = A6C110020000000000000004 /* OpenCineApple */; };
+		A6C120010000000000000002 /* App/LunaScopeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6C120020000000000000002 /* App/LunaScopeApp.swift */; };
+		BAD160000000000000000008 /* LunaScopeConnectionWidget.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = BAD160000000000000000002 /* LunaScopeConnectionWidget.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		BAD16000000000000000000A /* Models/CameraConnectionActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAD160000000000000000009 /* Models/CameraConnectionActivity.swift */; };
+		BAD160000000000000000011 /* Models/CameraConnectionActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = BAD160000000000000000009 /* Models/CameraConnectionActivity.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A6C13001000000000000008 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E9D7F4E30B6CD8F00218943 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1E9D7F5530B6CD8F00218943;
+			remoteInfo = LunaScope;
+		};
+		A6C13002000000000000008 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E9D7F4E30B6CD8F00218943 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1E9D7F5530B6CD8F00218943;
+			remoteInfo = LunaScope;
+		};
+		BAD16000000000000000000C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1E9D7F4E30B6CD8F00218943 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = BAD160000000000000000001;
+			remoteInfo = LunaScopeConnectionWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		BAD160000000000000000007 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			dstPath = "";
+			dstSubfolder = PlugIns;
+			files = (
+				BAD160000000000000000008 /* LunaScopeConnectionWidget.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		1E9D7F5630B6CD8F00218943 /* LunaScope.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LunaScope.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A6C120020000000000000002 /* App/LunaScopeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App/LunaScopeApp.swift; sourceTree = SOURCE_ROOT; };
+		A6C13001000000000000001 /* LunaScopeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LunaScopeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A6C13002000000000000001 /* LunaScopeUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = LunaScopeUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		BAD160000000000000000002 /* LunaScopeConnectionWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; path = LunaScopeConnectionWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		BAD160000000000000000009 /* Models/CameraConnectionActivity.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models/CameraConnectionActivity.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		1E9D7F5830B6CD8F00218943 /* LunaScope */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = LunaScope;
+			sourceTree = "<group>";
+		};
+		A6C13001000000000000002 /* LunaScopeTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = LunaScopeTests;
+			sourceTree = "<group>";
+		};
+		A6C13002000000000000002 /* LunaScopeUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = LunaScopeUITests;
+			sourceTree = "<group>";
+		};
+		BAD160000000000000000003 /* LunaScopeConnectionWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = LunaScopeConnectionWidget;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		1E9D7F5330B6CD8F00218943 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+				A6C110010000000000000001 /* LunaTransportApple in Frameworks */,
+				A6C110010000000000000002 /* LunaTransportProtocol in Frameworks */,
+				A6C110010000000000000003 /* OpenCineCore in Frameworks */,
+				A6C110010000000000000004 /* OpenCineApple in Frameworks */,
+			);
+		};
+		A6C13001000000000000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		A6C13002000000000000005 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+		BAD160000000000000000006 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+			);
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		1E9D7F4D30B6CD8F00218943 = {
+			isa = PBXGroup;
+			children = (
+				A6C120020000000000000002 /* App/LunaScopeApp.swift */,
+				1E9D7F5830B6CD8F00218943 /* LunaScope */,
+				A6C13001000000000000002 /* LunaScopeTests */,
+				A6C13002000000000000002 /* LunaScopeUITests */,
+				BAD160000000000000000003 /* LunaScopeConnectionWidget */,
+				BAD160000000000000000010 /* LunaScopeShared */,
+				1E9D7F5730B6CD8F00218943 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		1E9D7F5730B6CD8F00218943 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				BAD160000000000000000002 /* LunaScopeConnectionWidget.appex */,
+				1E9D7F5630B6CD8F00218943 /* LunaScope.app */,
+				A6C13001000000000000001 /* LunaScopeTests.xctest */,
+				A6C13002000000000000001 /* LunaScopeUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		BAD160000000000000000010 /* LunaScopeShared */ = {
+			isa = PBXGroup;
+			children = (
+				BAD160000000000000000009 /* Models/CameraConnectionActivity.swift */,
+			);
+			path = LunaScopeShared;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1E9D7F5530B6CD8F00218943 /* LunaScope */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1E9D7F6130B6CD8F00218943 /* Build configuration list for PBXNativeTarget "LunaScope" */;
+			buildPhases = (
+				1E9D7F5230B6CD8F00218943 /* Sources */,
+				1E9D7F5330B6CD8F00218943 /* Frameworks */,
+				1E9D7F5430B6CD8F00218943 /* Resources */,
+				BAD160000000000000000007 /* Embed App Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				BAD16000000000000000000B /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				1E9D7F5830B6CD8F00218943 /* LunaScope */,
+			);
+			name = LunaScope;
+			packageProductDependencies = (
+				A6C110020000000000000001 /* LunaTransportApple */,
+				A6C110020000000000000002 /* LunaTransportProtocol */,
+				A6C110020000000000000003 /* OpenCineCore */,
+				A6C110020000000000000004 /* OpenCineApple */,
+			);
+			productName = LunaScope;
+			productReference = 1E9D7F5630B6CD8F00218943 /* LunaScope.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A6C13001000000000000003 /* LunaScopeTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A6C1300100000000000000B /* Build configuration list for PBXNativeTarget "LunaScopeTests" */;
+			buildPhases = (
+				A6C13001000000000000004 /* Sources */,
+				A6C13001000000000000005 /* Frameworks */,
+				A6C13001000000000000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A6C13001000000000000007 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A6C13001000000000000002 /* LunaScopeTests */,
+			);
+			name = LunaScopeTests;
+			productName = LunaScopeTests;
+			productReference = A6C13001000000000000001 /* LunaScopeTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		A6C13002000000000000003 /* LunaScopeUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A6C1300200000000000000B /* Build configuration list for PBXNativeTarget "LunaScopeUITests" */;
+			buildPhases = (
+				A6C13002000000000000004 /* Sources */,
+				A6C13002000000000000005 /* Frameworks */,
+				A6C13002000000000000006 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A6C13002000000000000007 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				A6C13002000000000000002 /* LunaScopeUITests */,
+			);
+			name = LunaScopeUITests;
+			productName = LunaScopeUITests;
+			productReference = A6C13002000000000000001 /* LunaScopeUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+		BAD160000000000000000001 /* LunaScopeConnectionWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BAD16000000000000000000D /* Build configuration list for PBXNativeTarget "LunaScopeConnectionWidget" */;
+			buildPhases = (
+				BAD160000000000000000004 /* Sources */,
+				BAD160000000000000000006 /* Frameworks */,
+				BAD160000000000000000005 /* Resources */,
+			);
+			buildRules = (
+			);
+			fileSystemSynchronizedGroups = (
+				BAD160000000000000000003 /* LunaScopeConnectionWidget */,
+			);
+			name = LunaScopeConnectionWidget;
+			productName = LunaScopeConnectionWidget;
+			productReference = BAD160000000000000000002 /* LunaScopeConnectionWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1E9D7F4E30B6CD8F00218943 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2710;
+				LastUpgradeCheck = 2710;
+				TargetAttributes = {
+					1E9D7F5530B6CD8F00218943 = {
+						CreatedOnToolsVersion = 27.1;
+					};
+					A6C13001000000000000003 = {
+						TestTargetID = 1E9D7F5530B6CD8F00218943;
+					};
+					A6C13002000000000000003 = {
+						TestTargetID = 1E9D7F5530B6CD8F00218943;
+					};
+				};
+			};
+			buildConfigurationList = 1E9D7F5130B6CD8F00218943 /* Build configuration list for PBXProject "LunaScope" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+				"zh-Hans",
+			);
+			mainGroup = 1E9D7F4D30B6CD8F00218943;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				A6C110030000000000000001 /* XCRemoteSwiftPackageReference "OpenCine" */,
+				A6C110030000000000000003 /* XCLocalSwiftPackageReference "Packages/LunaScopeTransport" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 1E9D7F5730B6CD8F00218943 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				BAD160000000000000000001 /* LunaScopeConnectionWidget */,
+				1E9D7F5530B6CD8F00218943 /* LunaScope */,
+				A6C13001000000000000003 /* LunaScopeTests */,
+				A6C13002000000000000003 /* LunaScopeUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1E9D7F5430B6CD8F00218943 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		A6C13001000000000000006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		A6C13002000000000000006 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+		BAD160000000000000000005 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			files = (
+			);
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1E9D7F5230B6CD8F00218943 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				A6C120010000000000000002 /* App/LunaScopeApp.swift in Sources */,
+				BAD160000000000000000011 /* Models/CameraConnectionActivity.swift in Sources */,
+			);
+		};
+		A6C13001000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
+		A6C13002000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+			);
+		};
+		BAD160000000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			files = (
+				BAD16000000000000000000A /* Models/CameraConnectionActivity.swift in Sources */,
+			);
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A6C13001000000000000007 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1E9D7F5530B6CD8F00218943 /* LunaScope */;
+			targetProxy = A6C13001000000000000008 /* PBXContainerItemProxy */;
+		};
+		A6C13002000000000000007 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1E9D7F5530B6CD8F00218943 /* LunaScope */;
+			targetProxy = A6C13002000000000000008 /* PBXContainerItemProxy */;
+		};
+		BAD16000000000000000000B /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = BAD160000000000000000001 /* LunaScopeConnectionWidget */;
+			targetProxy = BAD16000000000000000000C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1E9D7F5F30B6CD8F00218943 /* Debug configuration for PBXProject "LunaScope" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = 4N79Q8QY92;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		1E9D7F6030B6CD8F00218943 /* Release configuration for PBXProject "LunaScope" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = 4N79Q8QY92;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = NO;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		1E9D7F6230B6CD8F00218943 /* Debug configuration for PBXNativeTarget "LunaScope" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Config/LunaScope.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4N79Q8QY92;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Config/Info.plist;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "LunaScope uses Bluetooth to find and pair with Luna cameras.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "LunaScope uses the camera network for live view, controls, and original photos.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "LunaScope saves photos and videos you select from your camera to the Photos app.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "LunaScope uses photo library access to find or create the LunaScope album and save the photos and videos you select from your camera.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.jerryt92.LunaScope;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				XROS_DEPLOYMENT_TARGET = 27.0;
+			};
+			name = Debug;
+		};
+		1E9D7F6330B6CD8F00218943 /* Release configuration for PBXNativeTarget "LunaScope" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Config/LunaScope.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4N79Q8QY92;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Config/Info.plist;
+				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "LunaScope uses Bluetooth to find and pair with Luna cameras.";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "LunaScope uses the camera network for live view, controls, and original photos.";
+				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "LunaScope saves photos and videos you select from your camera to the Photos app.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "LunaScope uses photo library access to find or create the LunaScope album and save the photos and videos you select from your camera.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
+				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphonesimulator*]" = YES;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphoneos*]" = UIStatusBarStyleDefault;
+				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
+				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.jerryt92.LunaScope;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				REGISTER_APP_GROUPS = YES;
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				XROS_DEPLOYMENT_TARGET = 27.0;
+			};
+			name = Release;
+		};
+		A6C13001000000000000009 /* Debug configuration for PBXNativeTarget "LunaScopeTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.jerryt92.LunaScopeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LunaScope.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LunaScope";
+			};
+			name = Debug;
+		};
+		A6C1300100000000000000A /* Release configuration for PBXNativeTarget "LunaScopeTests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.jerryt92.LunaScopeTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/LunaScope.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/LunaScope";
+			};
+			name = Release;
+		};
+		A6C13002000000000000009 /* Debug configuration for PBXNativeTarget "LunaScopeUITests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.jerryt92.LunaScopeUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = LunaScope;
+			};
+			name = Debug;
+		};
+		A6C1300200000000000000A /* Release configuration for PBXNativeTarget "LunaScopeUITests" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.jerryt92.LunaScopeUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = LunaScope;
+			};
+			name = Release;
+		};
+		BAD16000000000000000000E /* Debug configuration for PBXNativeTarget "LunaScopeConnectionWidget" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4N79Q8QY92;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/LunaScopeConnectionWidget-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.jerryt92.LunaScope.connectionwidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		BAD16000000000000000000F /* Release configuration for PBXNativeTarget "LunaScopeConnectionWidget" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 4N79Q8QY92;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Config/LunaScopeConnectionWidget-Info.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = io.github.jerryt92.LunaScope.connectionwidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1E9D7F5130B6CD8F00218943 /* Build configuration list for PBXProject "LunaScope" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1E9D7F5F30B6CD8F00218943 /* Debug configuration for PBXProject "LunaScope" */,
+				1E9D7F6030B6CD8F00218943 /* Release configuration for PBXProject "LunaScope" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		1E9D7F6130B6CD8F00218943 /* Build configuration list for PBXNativeTarget "LunaScope" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1E9D7F6230B6CD8F00218943 /* Debug configuration for PBXNativeTarget "LunaScope" */,
+				1E9D7F6330B6CD8F00218943 /* Release configuration for PBXNativeTarget "LunaScope" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		A6C1300100000000000000B /* Build configuration list for PBXNativeTarget "LunaScopeTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A6C13001000000000000009 /* Debug configuration for PBXNativeTarget "LunaScopeTests" */,
+				A6C1300100000000000000A /* Release configuration for PBXNativeTarget "LunaScopeTests" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		A6C1300200000000000000B /* Build configuration list for PBXNativeTarget "LunaScopeUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A6C13002000000000000009 /* Debug configuration for PBXNativeTarget "LunaScopeUITests" */,
+				A6C1300200000000000000A /* Release configuration for PBXNativeTarget "LunaScopeUITests" */,
+			);
+			defaultConfigurationName = Release;
+		};
+		BAD16000000000000000000D /* Build configuration list for PBXNativeTarget "LunaScopeConnectionWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BAD16000000000000000000E /* Debug configuration for PBXNativeTarget "LunaScopeConnectionWidget" */,
+				BAD16000000000000000000F /* Release configuration for PBXNativeTarget "LunaScopeConnectionWidget" */,
+			);
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		A6C110030000000000000003 /* XCLocalSwiftPackageReference "Packages/LunaScopeTransport" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/LunaScopeTransport;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		A6C110030000000000000001 /* XCRemoteSwiftPackageReference "OpenCine" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/erik-sutton95/OpenCine.git";
+			requirement = {
+				kind = revision;
+				revision = 80247e711f82520f64fb2d35420eba78ca353268;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		A6C110020000000000000001 /* LunaTransportApple */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A6C110030000000000000003 /* XCLocalSwiftPackageReference "Packages/LunaScopeTransport" */;
+			productName = LunaTransportApple;
+		};
+		A6C110020000000000000002 /* LunaTransportProtocol */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A6C110030000000000000003 /* XCLocalSwiftPackageReference "Packages/LunaScopeTransport" */;
+			productName = LunaTransportProtocol;
+		};
+		A6C110020000000000000003 /* OpenCineCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A6C110030000000000000001 /* XCRemoteSwiftPackageReference "OpenCine" */;
+			productName = OpenCineCore;
+		};
+		A6C110020000000000000004 /* OpenCineApple */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = A6C110030000000000000001 /* XCRemoteSwiftPackageReference "OpenCine" */;
+			productName = OpenCineApple;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 1E9D7F4E30B6CD8F00218943 /* Project object */;
+	validationLevel = 1;
+}

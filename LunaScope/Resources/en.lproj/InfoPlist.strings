@@ -1,0 +1,11 @@
+/* LunaScope InfoPlist — English */
+
+"CFBundleName" = "LunaScope";
+
+"NSBluetoothAlwaysUsageDescription" = "LunaScope uses Bluetooth to find and pair with Luna cameras.";
+
+"NSLocalNetworkUsageDescription" = "LunaScope uses the camera network for live view, controls, and original photos.";
+
+"NSPhotoLibraryAddUsageDescription" = "LunaScope saves photos and videos you select from your camera to the Photos app.";
+
+"NSPhotoLibraryUsageDescription" = "LunaScope uses photo library access to find or create the LunaScope album and save the photos and videos you select from your camera.";

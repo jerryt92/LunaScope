@@ -1,0 +1,101 @@
+{
+  "fill" : {
+    "solid" : "extended-srgb:0.96078,0.98039,0.98039,1.00000"
+  },
+  "fill-specializations" : [
+    {
+      "appearance" : "dark",
+      "value" : {
+        "solid" : "extended-srgb:0.06275,0.11765,0.16471,1.00000"
+      }
+    }
+  ],
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : {
+                "solid" : "extended-srgb:0.88627,0.95686,0.96078,1.00000"
+              }
+            },
+            {
+              "appearance" : "tinted",
+              "value" : {
+                "solid" : "extended-srgb:0.90000,0.90000,0.90000,1.00000"
+              }
+            }
+          ],
+          "image-name" : "Wordmark.svg",
+          "name" : "LunaScope"
+        },
+        {
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : {
+                "solid" : "extended-srgb:0.32157,0.76078,0.81569,1.00000"
+              }
+            },
+            {
+              "appearance" : "tinted",
+              "value" : {
+                "solid" : "extended-srgb:0.90000,0.90000,0.90000,1.00000"
+              }
+            }
+          ],
+          "image-name" : "Waterline.svg",
+          "name" : "Waterline"
+        },
+        {
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : {
+                "solid" : "extended-srgb:0.19608,0.58824,0.65490,1.00000"
+              }
+            },
+            {
+              "appearance" : "tinted",
+              "value" : {
+                "solid" : "extended-srgb:0.65000,0.65000,0.65000,1.00000"
+              }
+            }
+          ],
+          "image-name" : "Reflection.svg",
+          "name" : "Reflection"
+        },
+        {
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : {
+                "solid" : "extended-srgb:0.32157,0.76078,0.81569,1.00000"
+              }
+            },
+            {
+              "appearance" : "tinted",
+              "value" : {
+                "solid" : "extended-srgb:1.00000,1.00000,1.00000,1.00000"
+              }
+            }
+          ],
+          "image-name" : "RisingRing.svg",
+          "name" : "Rising Ring"
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.0
+      },
+      "specular" : false
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : [
+      "iOS"
+    ]
+  }
+}
