@@ -475,7 +475,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Config/LunaScope.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = 4N79Q8QY92;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -483,6 +483,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Config/Info.plist;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "LunaScope uses Bluetooth to find and pair with Luna cameras.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is used to display live video from an external USB camera or capture device connected to your iPad.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "LunaScope uses the camera network for live view, controls, and original photos.";
@@ -529,7 +530,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = Config/LunaScope.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = 4N79Q8QY92;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -537,6 +538,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Config/Info.plist;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_NSBluetoothAlwaysUsageDescription = "LunaScope uses Bluetooth to find and pair with Luna cameras.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "Camera access is used to display live video from an external USB camera or capture device connected to your iPad.";
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "LunaScope uses the camera network for live view, controls, and original photos.";
@@ -640,7 +642,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = 4N79Q8QY92;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/LunaScopeConnectionWidget-Info.plist";
@@ -661,7 +663,7 @@
 				APPLICATION_EXTENSION_API_ONLY = YES;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 5;
 				DEVELOPMENT_TEAM = 4N79Q8QY92;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/LunaScopeConnectionWidget-Info.plist";
