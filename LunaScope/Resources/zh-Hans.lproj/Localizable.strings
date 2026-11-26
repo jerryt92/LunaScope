@@ -468,9 +468,15 @@
 
 "permissions.status.unknown" = "暂无";
 
+"settings.about.developerEmail" = "开发者邮箱";
+
 "settings.about.licenses" = "开源许可";
 
 "settings.about.privacy" = "隐私政策";
+
+"settings.about.support" = "技术支持";
+
+"settings.about.termsOfUse" = "使用条款";
 
 "settings.about.title" = "关于";
 
@@ -499,6 +505,14 @@
 "settings.diagnostics.share" = "分享归档";
 
 "settings.diagnostics.title" = "诊断日志";
+
+"settings.restoreDefaults" = "恢复默认设置";
+
+"settings.restoreDefaults.confirm" = "恢复";
+
+"settings.restoreDefaults.detail" = "将失败重试次数与等待确认超时恢复为默认值。不影响诊断日志。";
+
+"settings.restoreDefaults.message" = "失败重试次数与等待确认超时将恢复为默认值。";
 
 "settings.licenses.apache" = "Apache 许可证 2.0";
 

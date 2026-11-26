@@ -18,6 +18,12 @@ struct ConsoleView: View {
     @State private var customIntervalUnit = ConsoleShootInterval.Unit.seconds
     @State private var showsCustomInterval = false
     @ScaledMetric(relativeTo: .caption2) private var batteryRowHeight: CGFloat = 22
+    /// 设备图标槽宽，保证机身 / 屏幕两行胶囊左缘对齐且等宽。
+    @ScaledMetric(relativeTo: .caption2) private var batteryDeviceIconWidth: CGFloat = 12
+    /// 电池档位图标槽宽；充电闪电比普通档更宽，固定槽避免两行胶囊错位。
+    @ScaledMetric(relativeTo: .caption2) private var batteryGaugeIconWidth: CGFloat = 20
+    /// 百分比最小宽度，按「100%」预留，避免 9% 与 100% 把胶囊拉成不同宽。
+    @ScaledMetric(relativeTo: .caption2) private var batteryPercentMinWidth: CGFloat = 30
     @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
@@ -445,6 +451,7 @@ struct ConsoleView: View {
     private var previewInterrupted: Bool { camera.pictureStalled && !previewWorking }
 
     private var previewStatus: some View {
+        // fixedSize + 子行 maxWidth 无限：以较宽一行定宽，两颗胶囊等宽等高对齐。
         VStack(alignment: .leading, spacing: 4) {
             batteryStatus(
                 device: "camera.fill",
@@ -453,13 +460,14 @@ struct ConsoleView: View {
                 identifier: "console.battery.body")
             if camera.cameraProfile?.detachableScreen != false {
                 batteryStatus(
-                    device: "ipad",
+                    device: "ipad.landscape",
                     level: camera.screenBattery,
                     charging: camera.screenCharging,
                     identifier: "console.battery.screen")
             }
         }
         .font(.caption2.weight(.semibold).monospacedDigit())
+        .fixedSize(horizontal: true, vertical: false)
     }
 
     /// 机身 / 屏幕电量：设备图标 + 电量档位 + 百分比；充电时用电池内闪电，不另起图标。
@@ -467,18 +475,23 @@ struct ConsoleView: View {
     private func batteryStatus(device: String, level: Double?, charging: Bool, identifier: String) -> some View {
         let value = level.map { $0.formatted(.percent.precision(.fractionLength(0))) }
         let icon = Self.batteryIcon(level: level, charging: charging)
+        let showsGauge = level != nil || charging
         let accessibility = {
             let percent = value ?? String(localized: "permissions.status.unknown")
             return charging ? String(localized: "console.battery.charging \(percent)") : percent
         }()
         return HStack(spacing: 4) {
             Image(systemName: device)
-            if level != nil || charging {
-                Image(systemName: icon)
-            }
-            Text(value ?? "—").lineLimit(1)
+                .frame(width: batteryDeviceIconWidth, alignment: .center)
+            Image(systemName: icon)
+                .opacity(showsGauge ? 1 : 0)
+                .frame(width: batteryGaugeIconWidth, alignment: .center)
+            Text(value ?? "—")
+                .lineLimit(1)
+                .frame(minWidth: batteryPercentMinWidth, alignment: .trailing)
         }
         .padding(.horizontal, 8)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .frame(height: batteryRowHeight)
         .background(.black.opacity(0.65), in: Capsule())
         .accessibilityElement(children: .combine)

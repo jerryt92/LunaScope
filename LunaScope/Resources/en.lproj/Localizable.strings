@@ -468,9 +468,15 @@
 
 "permissions.status.unknown" = "Unavailable";
 
+"settings.about.developerEmail" = "Developer Email";
+
 "settings.about.licenses" = "Open Source Licenses";
 
 "settings.about.privacy" = "Privacy Policy";
+
+"settings.about.support" = "Support";
+
+"settings.about.termsOfUse" = "Terms of Use";
 
 "settings.about.title" = "About";
 
@@ -499,6 +505,14 @@
 "settings.diagnostics.share" = "Share archive";
 
 "settings.diagnostics.title" = "Diagnostic logs";
+
+"settings.restoreDefaults" = "Restore Defaults";
+
+"settings.restoreDefaults.confirm" = "Restore";
+
+"settings.restoreDefaults.detail" = "Resets retry count and confirm timeout to their defaults. Diagnostic logs are not affected.";
+
+"settings.restoreDefaults.message" = "Retry count and confirm timeout will return to their default values.";
 
 "settings.licenses.apache" = "Apache License 2.0";
 

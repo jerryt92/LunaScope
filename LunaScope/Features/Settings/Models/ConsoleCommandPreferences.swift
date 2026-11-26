@@ -27,6 +27,12 @@ enum ConsoleCommandPreferences: Sendable {
 
     nonisolated static var confirmSettle: Duration { .seconds(confirmTimeoutSeconds) }
 
+    /// 将参数下发相关偏好写回默认值。
+    nonisolated static func restoreDefaults() {
+        retryLimit = defaultRetryLimit
+        confirmTimeoutSeconds = defaultConfirmTimeoutSeconds
+    }
+
     nonisolated static func clampedRetryLimit(_ value: Int) -> Int {
         clamped(value, in: retryLimitRange)
     }

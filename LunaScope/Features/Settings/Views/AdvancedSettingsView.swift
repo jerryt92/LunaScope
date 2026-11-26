@@ -9,6 +9,7 @@ struct AdvancedSettingsView: View {
     @State private var archive: URL?
     @State private var preparing = false
     @State private var error: String?
+    @State private var showsRestoreConfirmation = false
 
     var body: some View {
         Form {
@@ -39,6 +40,15 @@ struct AdvancedSettingsView: View {
             }
 
             Section {
+                Button("settings.restoreDefaults", role: .destructive) {
+                    showsRestoreConfirmation = true
+                }
+                .accessibilityIdentifier("settings.restoreDefaults")
+            } footer: {
+                Text("settings.restoreDefaults.detail")
+            }
+
+            Section {
                 if preparing { ProgressView("settings.diagnostics.preparing") }
                 else if let archive {
                     ShareLink(item: archive) { Label("settings.diagnostics.share", systemImage: "square.and.arrow.up") }
@@ -58,6 +68,15 @@ struct AdvancedSettingsView: View {
         .onChange(of: confirmTimeoutSeconds) { _, value in
             confirmTimeoutSeconds = ConsoleCommandPreferences.clampedConfirmTimeout(value)
         }
+        .alert(
+            "settings.restoreDefaults",
+            isPresented: $showsRestoreConfirmation
+        ) {
+            Button("settings.restoreDefaults.confirm", role: .destructive, action: restoreDefaults)
+            Button("common.cancel", role: .cancel) {}
+        } message: {
+            Text("settings.restoreDefaults.message")
+        }
         .alert("settings.diagnostics.error", isPresented: Binding(
             get: { error != nil }, set: { if !$0 { error = nil } }
         )) {
@@ -65,6 +84,13 @@ struct AdvancedSettingsView: View {
         } message: {
             Text(error ?? "")
         }
+    }
+
+    /// 恢复参数下发偏好，并同步本页 @AppStorage 回显。
+    private func restoreDefaults() {
+        ConsoleCommandPreferences.restoreDefaults()
+        retryLimit = ConsoleCommandPreferences.defaultRetryLimit
+        confirmTimeoutSeconds = ConsoleCommandPreferences.defaultConfirmTimeoutSeconds
     }
 
     /// 仅由用户请求时生成临时归档，交给系统分享面板选择目的地。
