@@ -14,7 +14,7 @@ FONT_ZH = "/System/Library/Fonts/Hiragino Sans GB.ttc"
 SCREENS = [
     (
         "01-gimbal-position", "#214e58", "#92e3e7",
-        ("记住云台位置", "回到上次构图", "适配影石360 Luna 系列相机"),
+        ("记住云台位置", "回到上次构图", "适配 Insta360 Luna 系列相机"),
         ("Save a gimbal angle", "Return to your shot", "For Insta360 Luna series cameras"),
     ),
     (

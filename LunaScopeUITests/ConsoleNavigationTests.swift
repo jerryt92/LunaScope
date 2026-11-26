@@ -92,7 +92,7 @@ final class ConsoleNavigationTests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["settings.licenses.source.openCine"].firstMatch.exists)
         let openCineUsage = NSPredicate(
             format: "label CONTAINS %@ AND label CONTAINS %@",
-            "实时取景和相册缩略图处理", "接入影石360 Luna 系列相机"
+            "实时取景和相册缩略图处理", "接入 Insta360 Luna 系列相机"
         )
         XCTAssertTrue(app.staticTexts.containing(openCineUsage).firstMatch.exists)
 

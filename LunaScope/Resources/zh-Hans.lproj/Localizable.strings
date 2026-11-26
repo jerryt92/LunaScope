@@ -512,7 +512,7 @@
 
 "settings.licenses.usage.kcp" = "随相机通信模块提供，用于可拆卸屏幕控制通道的 UDP 可靠传输。";
 
-"settings.licenses.usage.openCine" = "LunaScope 使用 OpenCine 实现相机连接、拍摄参数控制、实时取景和相册缩略图处理。LunaScopeTransport 在其相机适配代码基础上接入影石360 Luna 系列相机。";
+"settings.licenses.usage.openCine" = "LunaScope 使用 OpenCine 实现相机连接、拍摄参数控制、实时取景和相册缩略图处理。LunaScopeTransport 在其相机适配代码基础上接入 Insta360 Luna 系列相机。";
 
 "tab.album" = "相册";
 

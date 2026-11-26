@@ -2,7 +2,7 @@
 
 ## 环境与命令
 
-Xcode 27.1、Swift 6 工具链以及 iOS 27 模拟器。App 使用 Swift 5 语言模式。实机调试需 Xcode 自动签名与影石360 Luna 系列相机。
+Xcode 27.1、Swift 6 工具链以及 iOS 27 模拟器。App 使用 Swift 5 语言模式。实机调试需 Xcode 自动签名与 Insta360 Luna 系列相机。
 
 ```sh
 xcodebuild -project LunaScope.xcodeproj -scheme LunaScope \
@@ -63,11 +63,11 @@ xcodebuild -project LunaScope.xcodeproj -scheme LunaScope \
 
 蓝牙广播名用于发现阶段显示。蓝牙授权和 Wi-Fi 握手从同一组 JSON 取得支持名单，配对时仍校验加密身份和 Wi-Fi 接力的机身序列号。预设记录来源机型，应用前按当前机型限制筛选可写入的设置。
 
-影石360 Luna 系列相机的公开能力以官方规格为依据。Pro 的固件型号字符串和控制编号沿用现有 Luna 协议适配假设，待真机确认。Pro 超清竖幅照片的协议编号尚未取得，配置先列出有协议编号依据的规格。 [官方拍摄规格](https://onlinemanual.insta360.com/lunaultra/zh-cn/specs/shooting) [OpenInstaCine 规格记录](https://opencapture.org/openinstacine/docs/devices/luna-ultra/modes/)
+ Insta360 Luna 系列相机的公开能力以官方规格为依据。Pro 的固件型号字符串和控制编号沿用现有 Luna 协议适配假设，待真机确认。Pro 超清竖幅照片的协议编号尚未取得，配置先列出有协议编号依据的规格。 [官方拍摄规格](https://onlinemanual.insta360.com/lunaultra/zh-cn/specs/shooting) [OpenInstaCine 规格记录](https://opencapture.org/openinstacine/docs/devices/luna-ultra/modes/)
 
 ## 真机回归
 
-1. 逐台连接影石360 Luna 系列相机，确认界面显示正确机型，并核对内置存储与插卡状态分别可读取。
+1. 逐台连接 Insta360 Luna 系列相机，确认界面显示正确机型，并核对内置存储与插卡状态分别可读取。
 2. 在慢门拍照、全景合成和停止录像写卡时观察预览，确认忙碌提示以及相机空闲后的画面恢复。分别在拍摄中和空闲时切到后台再返回。
 3. 锁屏核对实时活动，点按回到 App 后保留原页签。主动断开后确认实时活动结束。
 4. 拍摄页旋转至横屏与竖屏，在预览和全屏间来回切换，确认画面与变焦、云台和快门操作恢复正常。选择标准照片后开关实况照片，核对机身状态、`LIV_` 原片和预设恢复，再验证关闭后可以设置超清照片。
