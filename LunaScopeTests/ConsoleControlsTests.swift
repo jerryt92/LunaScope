@@ -129,6 +129,27 @@ final class ConsoleControlsTests: XCTestCase {
     }
 
     @MainActor
+    func testContinuousPreferenceDecodesWhenMissingFromOlderMemory() throws {
+        let suite = "ConsoleControlsTests.continuousPreference." + UUID().uuidString
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let store = ConsoleMemoryStore(defaults: defaults)
+        let legacy = try JSONEncoder().encode(LegacyConsoleMemory(presets: []))
+        defaults.set(legacy, forKey: "feature.console.memory")
+        let loaded = try store.load()
+        XCTAssertFalse(loaded.continuousPhoto)
+        XCTAssertNil(loaded.continuousInterval)
+
+        var saved = loaded
+        saved.continuousPhoto = true
+        saved.continuousInterval = ConsoleShootInterval(selection: .preset(30))
+        try store.save(saved)
+        let restored = try store.load()
+        XCTAssertTrue(restored.continuousPhoto)
+        XCTAssertEqual(restored.continuousInterval?.seconds, 30)
+    }
+
+    @MainActor
     func testRenamePresetPersistsNewName() throws {
         let suite = "ConsoleControlsTests.rename." + UUID().uuidString
         let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
@@ -163,25 +184,37 @@ final class ConsoleControlsTests: XCTestCase {
         let cameraID = UUID()
         let forward = try XCTUnwrap(ConsoleGimbalPosition(cameraID: cameraID, yaw: 20, pitch: 10, isFlipped: false))
 
+        // 本会话还没确认朝向：不因为记忆里的翻转标记就拒绝定位。
+        wire.angle = .init(pitch: 10, yaw: 20)
+        let rememberedFlip = try XCTUnwrap(ConsoleGimbalPosition(cameraID: cameraID, yaw: 20, pitch: 10, isFlipped: true))
+        let unknown = try await commands.restore(rememberedFlip, currentFlip: nil)
+        XCTAssertEqual(unknown, .arrived)
+        XCTAssertTrue(wire.moves.isEmpty)
+
         // 不一致：只提示，不归位、不自动翻转。
         wire.angle = .init(pitch: 0, yaw: 180)
         let mismatched = try await commands.restore(forward, currentFlip: true)
-        XCTAssertTrue(mismatched)
+        XCTAssertEqual(mismatched, .flipMismatch)
         XCTAssertTrue(wire.moves.isEmpty)
 
         // 一致：只归位。
         wire.angle = .init(pitch: 1, yaw: 5)
         let matched = try await commands.restore(forward, currentFlip: false)
-        XCTAssertFalse(matched)
+        XCTAssertEqual(matched, .arrived)
         XCTAssertEqual(wire.moves, [.setAngle])
         XCTAssertTrue(forward.matchesAngles(wire.angle))
 
-        // 无记忆翻转：只归位。
+        // 记忆没写翻转、当前已翻转：提示不一致，不转动。
         wire.moves = []
         wire.angle = .init(pitch: 0, yaw: 0)
         let anglesOnly = try XCTUnwrap(ConsoleGimbalPosition(cameraID: cameraID, yaw: 30, pitch: 6))
-        let noFlip = try await commands.restore(anglesOnly, currentFlip: true)
-        XCTAssertFalse(noFlip)
+        let flippedNow = try await commands.restore(anglesOnly, currentFlip: true)
+        XCTAssertEqual(flippedNow, .flipMismatch)
+        XCTAssertTrue(wire.moves.isEmpty)
+
+        // 记忆没写翻转、当前正向：只归位。
+        let noFlip = try await commands.restore(anglesOnly, currentFlip: false)
+        XCTAssertEqual(noFlip, .arrived)
         XCTAssertEqual(wire.moves, [.setAngle])
     }
 
@@ -253,6 +286,36 @@ final class ConsoleControlsTests: XCTestCase {
     }
 
     @MainActor
+    func testZoomLogPositionSpacesDoublingsEvenlyAndStaysInsideRange() throws {
+        let domain = SettingDomain(range: 1...15)
+        let zoom = try XCTUnwrap(ConsoleZoom(profile: try ultraProfile(), mode: .video, format: 48, domain: domain))
+        let one = try XCTUnwrap(zoom.unitPosition(of: 1))
+        let two = try XCTUnwrap(zoom.unitPosition(of: 2))
+        let four = try XCTUnwrap(zoom.unitPosition(of: 4))
+        let six = try XCTUnwrap(zoom.unitPosition(of: 6))
+        let twelve = try XCTUnwrap(zoom.unitPosition(of: 12))
+        XCTAssertEqual(one, 0, accuracy: 0.0001)
+        XCTAssertEqual(try XCTUnwrap(zoom.unitPosition(of: 15)), 1, accuracy: 0.0001)
+        XCTAssertEqual(two, (one + four) / 2, accuracy: 0.0001)
+        XCTAssertEqual(two - one, twelve - six, accuracy: 0.0001)
+
+        XCTAssertEqual(zoom.factor(atUnitPosition: -1), zoom.fineRange?.lowerBound)
+        XCTAssertEqual(zoom.factor(atUnitPosition: 2), zoom.fineRange?.upperBound)
+        var previous = -1.0
+        for position in stride(from: 0.0, through: 1.0, by: 0.05) {
+            let factor = try XCTUnwrap(zoom.factor(atUnitPosition: position))
+            XCTAssertGreaterThanOrEqual(factor, previous)
+            XCTAssertTrue(try XCTUnwrap(zoom.fineRange).contains(factor))
+            previous = factor
+        }
+
+        let fixed = try XCTUnwrap(ConsoleZoom(profile: try ultraProfile(), mode: .video, format: 214, domain: domain))
+        XCTAssertNil(fixed.unitPosition(of: 1))
+        XCTAssertNil(fixed.factor(atUnitPosition: 0.5))
+        XCTAssertTrue(fixed.offersChoice)
+    }
+
+    @MainActor
     func testLunaUltraZoomKeepsCurrentLensWhenRecording8KOrPortrait4K() throws {
         let domain = SettingDomain(range: 1...15)
         let portrait = try XCTUnwrap(LunaVideoResolution.rawValue(width: 2160, height: 3840, framesPerSecond: 30))
@@ -300,25 +363,12 @@ final class ConsoleControlsTests: XCTestCase {
         XCTAssertFalse(ConsoleShootInterval(selection: .preset(10)).isCustom)
     }
 
-    func testContinuousCaptureWaitsForCompletionBeforeLongExposureNextShot() {
-        let started = Date(timeIntervalSince1970: 1_000)
-        // 短曝光：完成后仍需等到开拍后的间隔。
-        let shortDone = started.addingTimeInterval(1)
-        let shortWait = ConsoleContinuousCapture.delayBeforeNextShot(
-            interval: 10, started: started, completed: shortDone, now: shortDone)
-        XCTAssertEqual(shortWait, 9, accuracy: 0.001)
-
-        // 长曝光超过间隔：完成反馈到达后立即允许下一张。
-        let longDone = started.addingTimeInterval(30)
-        let longWait = ConsoleContinuousCapture.delayBeforeNextShot(
-            interval: 10, started: started, completed: longDone, now: longDone)
-        XCTAssertEqual(longWait, 0, accuracy: 0.001)
-
-        // 完成后若时钟略晚于完成时刻，也不应再额外拖延。
-        let afterLong = longDone.addingTimeInterval(0.2)
-        let late = ConsoleContinuousCapture.delayBeforeNextShot(
-            interval: 10, started: started, completed: longDone, now: afterLong)
-        XCTAssertEqual(late, 0, accuracy: 0.001)
+    func testContinuousCaptureUsesFixedInterval() {
+        let fired = Date(timeIntervalSince1970: 1_000)
+        let next = ConsoleContinuousCapture.nextTrigger(firedAt: fired, interval: 10)
+        XCTAssertEqual(next.timeIntervalSince(fired), 10, accuracy: 0.001)
+        let invalid = ConsoleContinuousCapture.nextTrigger(firedAt: fired, interval: .nan)
+        XCTAssertEqual(invalid, fired)
     }
 
     @MainActor
@@ -849,4 +899,9 @@ private final class PhotoWire {
             throw LunaProtocolError.cameraRejectedRequest
         }
     }
+}
+
+/// 没有连续拍摄字段的旧存档，用来确认解码仍能读出预设。
+private struct LegacyConsoleMemory: Encodable {
+    var presets: [ConsoleMemory.Preset]
 }

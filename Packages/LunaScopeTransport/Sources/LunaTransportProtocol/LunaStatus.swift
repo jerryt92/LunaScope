@@ -586,8 +586,9 @@ public struct LunaThumbnail: Equatable, Sendable {
 
 extension LunaProtocol {
     /// cmd 13 reply `GetFileListResp`: uris + total_count. Observed.
+    /// 文件很多时单页会超过 ProtoMessage 默认的 1MB / 16384 字段上限。
     public static func fileList(response: Data) throws -> (uris: [String], totalCount: UInt64) {
-        let m = try ProtoMessage(response)
+        let m = try ProtoMessage(response, maximumBytes: 32 * 1_024 * 1_024, maximumFields: 200_000)
         let uris = try m.fields.filter { $0.number == 1 }.map { field -> String in
             guard case let .bytes(data) = field.value, let text = String(data: data, encoding: .utf8) else {
                 throw LunaProtocolError.invalidField(1)
@@ -598,13 +599,17 @@ extension LunaProtocol {
     }
 
     /// cmd 38 reply `FileInfo_List`: repeated { file_path, metadata }. Observed.
+    /// 照片一多，整包元数据会超过默认 1MB 上限；解析直接失败时相册日期会全部变成未知。
+    /// 单条损坏只跳过该条，其余文件仍保留拍摄时间。
     public static func fileInfoList(response: Data) throws -> [LunaMediaFile] {
-        try ProtoMessage(response).fields.filter { $0.number == 1 }.map { field in
-            guard case let .bytes(data) = field.value else { throw LunaProtocolError.invalidField(1) }
-            let info = try ProtoMessage(data)
-            return LunaMediaFile(uri: try info.string(1),
-                                 metadata: try info.optionalBytes(2).map(LunaFileMetadata.init))
-        }
+        try ProtoMessage(response, maximumBytes: 32 * 1_024 * 1_024, maximumFields: 200_000)
+            .fields.compactMap { field in
+                guard field.number == 1, case let .bytes(data) = field.value else { return nil }
+                guard let info = try? ProtoMessage(data),
+                      let uri = try? info.string(1), !uri.isEmpty else { return nil }
+                let metadata = (try? info.optionalBytes(2)).flatMap { try? LunaFileMetadata($0) }
+                return LunaMediaFile(uri: uri, metadata: metadata)
+            }
     }
 
     /// cmd 5 reply `StopCaptureResp { Video video = 1 }`. Observed uri; size and

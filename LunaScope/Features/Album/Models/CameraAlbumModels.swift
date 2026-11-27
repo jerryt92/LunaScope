@@ -36,7 +36,7 @@ nonisolated struct CameraAlbumItem: Identifiable, Equatable, Sendable {
         uri = file.uri
         self.proxyURI = proxyURI
         filename = (file.uri as NSString).lastPathComponent
-        date = file.metadata?.creationDate.flatMap { Calendar.current.date(from: $0) }
+        date = Self.captureDate(metadata: file.metadata, filename: filename)
         byteCount = file.metadata?.fileSize
         if let width = file.metadata?.width, let height = file.metadata?.height, width > 0, height > 0 {
             dimensions = CameraAlbumDimensions(width: width, height: height)
@@ -53,6 +53,45 @@ nonisolated struct CameraAlbumItem: Identifiable, Equatable, Sendable {
         else if ext == "dng" { kind = .raw }
         else { kind = .other }
     }
+
+    /// 优先用相机元数据里的本地墙钟时间；没有元数据时从文件名解析，避免大量照片被归到未知时间。
+    private static func captureDate(metadata: LunaFileMetadata?, filename: String) -> Date? {
+        if let components = metadata?.creationDate, let date = wallClock.date(from: components) {
+            return date
+        }
+        return date(in: filename)
+    }
+
+    /// 文件名形如 `IMG_20260818_184246_00_001.jpg` 或 `LIV_20260818184246.jpg`。
+    private static func date(in filename: String) -> Date? {
+        guard let match = stampExpression.firstMatch(
+            in: filename, range: NSRange(filename.startIndex..., in: filename)) else { return nil }
+        let text = { (index: Int) -> String? in
+            let range = match.range(at: index)
+            guard range.location != NSNotFound, let span = Range(range, in: filename) else { return nil }
+            return String(filename[span])
+        }
+        let digits: String
+        if let day = text(1), let time = text(2) { digits = day + time }
+        else if let combined = text(3) { digits = combined }
+        else { return nil }
+        guard digits.count == 14, let stamp = Int(digits) else { return nil }
+        return wallClock.date(from: DateComponents(
+            year: stamp / 10_000_000_000, month: stamp / 100_000_000 % 100,
+            day: stamp / 1_000_000 % 100, hour: stamp / 10_000 % 100,
+            minute: stamp / 100 % 100, second: stamp % 100))
+    }
+
+    private static let wallClock: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = .current
+        return calendar
+    }()
+
+    private static let stampExpression: NSRegularExpression = {
+        let pattern = #"(?:_|^)(\d{8})_(\d{6})(?=_|\.)|(?:_|^)(\d{14})(?=_|\.)"#
+        return try! NSRegularExpression(pattern: pattern)
+    }()
 }
 
 nonisolated struct CameraAlbumDimensions: Equatable, Sendable {

@@ -3,7 +3,7 @@ import LunaTransportApple
 import LunaTransportProtocol
 import OpenCineMotion
 
-struct ConsoleMemory: Codable {
+struct ConsoleMemory: Codable, Equatable {
     struct Preset: Codable, Identifiable, Equatable {
         let id: UUID
         let name: String
@@ -14,6 +14,40 @@ struct ConsoleMemory: Codable {
 
     var lastPosition: ConsoleGimbalPosition?
     var presets: [Preset] = []
+    /// 上次是否在照片模式下使用连续拍摄。旧存档没有这个字段时视为关闭。
+    var continuousPhoto = false
+    /// 上次使用的连续拍摄间隔；关闭连拍后仍保留，便于下次恢复。
+    var continuousInterval: ConsoleShootInterval?
+
+    init(
+        lastPosition: ConsoleGimbalPosition? = nil, presets: [Preset] = [],
+        continuousPhoto: Bool = false, continuousInterval: ConsoleShootInterval? = nil
+    ) {
+        self.lastPosition = lastPosition
+        self.presets = presets
+        self.continuousPhoto = continuousPhoto
+        self.continuousInterval = continuousInterval
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case lastPosition, presets, continuousPhoto, continuousInterval
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        lastPosition = try container.decodeIfPresent(ConsoleGimbalPosition.self, forKey: .lastPosition)
+        presets = try container.decodeIfPresent([Preset].self, forKey: .presets) ?? []
+        continuousPhoto = try container.decodeIfPresent(Bool.self, forKey: .continuousPhoto) ?? false
+        continuousInterval = try container.decodeIfPresent(ConsoleShootInterval.self, forKey: .continuousInterval)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encodeIfPresent(lastPosition, forKey: .lastPosition)
+        try container.encode(presets, forKey: .presets)
+        try container.encode(continuousPhoto, forKey: .continuousPhoto)
+        try container.encodeIfPresent(continuousInterval, forKey: .continuousInterval)
+    }
 }
 
 /// 只保存一处云台姿态，绑定到实际回读它的相机。角度相对于机柄。

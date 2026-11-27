@@ -31,10 +31,10 @@ struct LunaScopeApp: App {
             connected: connection.camera.connected,
             dropped: connection.camera.connectionDropped,
             reconnecting: connection.camera.reconnecting,
-            verifying: connection.camera.verifyingConnection,
             recording: connection.camera.recording,
             continuous: connection.camera.continuousShooting,
-            pipActive: connection.camera.pictureInPicture.isActive,
+            continuousInterval: connection.camera.continuousShooting
+                ? connection.camera.continuousInterval.seconds : nil,
             phase: scenePhase
         )
     }
@@ -46,9 +46,9 @@ private struct ActivityInputs: Equatable {
     let connected: Bool
     let dropped: Bool
     let reconnecting: Bool
-    let verifying: Bool
     let recording: Bool
     let continuous: Bool
-    let pipActive: Bool
+    /// 连拍进行中的间隔秒数，改间隔时刷新实时活动。
+    let continuousInterval: Double?
     let phase: ScenePhase
 }

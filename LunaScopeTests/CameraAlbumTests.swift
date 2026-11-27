@@ -165,6 +165,109 @@ final class CameraAlbumTests: XCTestCase {
         XCTAssertEqual(Data(jpeg[range]), mp4)
     }
 
+    @MainActor
+    func testCatalogShowsJPGDateAndHidesPairedRAW() async throws {
+        let jpg = CameraAlbumItem(file: LunaMediaFile(
+            uri: "/DCIM/Camera01/IMG_20260818_184246_00_001.jpg"))
+        let raw = CameraAlbumItem(file: LunaMediaFile(
+            uri: "/DCIM/Camera01/IMG_20260818_184246_00_001.dng"))
+        let service = AlbumAccessStub(items: [jpg, raw])
+        let model = CameraAlbumModel(camera: CameraController(), service: service)
+        let cameraID = UUID()
+        model.updateContext(cameraID: cameraID, connected: true, active: true)
+        try await waitFor { model.hasSnapshot && !model.loading }
+
+        let shown = model.sections.flatMap(\.items)
+        XCTAssertEqual(shown.map(\.uri), [jpg.uri])
+        XCTAssertEqual(model.sections.map(\.key), ["2026-08-18"])
+        let parts = Calendar.current.dateComponents(
+            [.year, .month, .day, .hour, .minute], from: try XCTUnwrap(shown.first?.date))
+        XCTAssertEqual(parts.year, 2026)
+        XCTAssertEqual(parts.month, 8)
+        XCTAssertEqual(parts.day, 18)
+        XCTAssertEqual(parts.hour, 18)
+        XCTAssertEqual(parts.minute, 42)
+
+        model.toggleSelectionMode()
+        model.toggleGroup(model.selectableIdentifiers)
+        model.deleteSelected()
+        try await waitFor { !model.deleting }
+        XCTAssertEqual(service.deletedURIs, [raw.uri, jpg.uri])
+        XCTAssertTrue(model.sections.isEmpty)
+        model.updateContext(cameraID: cameraID, connected: true, active: false)
+    }
+
+    @MainActor
+    func testFirstPageAppearsBeforeTheRestAndSelectAllExtends() async throws {
+        let first = CameraAlbumItem(file: LunaMediaFile(uri: "/DCIM/IMG_20260818_184246_00_001.jpg"))
+        let second = CameraAlbumItem(file: LunaMediaFile(uri: "/DCIM/IMG_20260818_184300_00_002.jpg"))
+        let service = AlbumAccessStub(items: [first, second])
+        service.listPageSize = 1
+        service.holdBetweenPages = true
+        let model = CameraAlbumModel(camera: CameraController(), service: service)
+        let cameraID = UUID()
+        model.updateContext(cameraID: cameraID, connected: true, active: true)
+        try await waitFor { model.loading && model.itemCount == 1 }
+        XCTAssertEqual(model.sections.flatMap(\.items).map(\.uri), [first.uri])
+
+        model.toggleSelectionMode()
+        model.toggleGroup(model.selectableIdentifiers)
+        XCTAssertTrue(model.isAllSelected)
+        service.finishNextPage()
+        try await waitFor { !model.loading && model.itemCount == 2 }
+        XCTAssertEqual(Set(model.selection), Set(model.sections.flatMap(\.items).map(\.id)))
+        XCTAssertTrue(model.isAllSelected)
+        model.updateContext(cameraID: cameraID, connected: true, active: false)
+    }
+
+    @MainActor
+    func testDeleteContinuesAfterLeavingAlbum() async throws {
+        let first = CameraAlbumItem(file: LunaMediaFile(uri: "/DCIM/IMG_1.jpg"))
+        let second = CameraAlbumItem(file: LunaMediaFile(uri: "/DCIM/IMG_2.jpg"))
+        let service = AlbumAccessStub(items: [first, second])
+        let model = CameraAlbumModel(camera: CameraController(), service: service)
+        let cameraID = UUID()
+        model.updateContext(cameraID: cameraID, connected: true, active: true)
+        try await waitFor { model.hasSnapshot && !model.loading }
+
+        model.toggleSelectionMode()
+        model.toggleGroup([first.id])
+        service.holdDelete = true
+        model.deleteSelected()
+        try await waitFor { service.pendingDelete != nil }
+        model.updateContext(cameraID: cameraID, connected: true, active: false)
+        XCTAssertTrue(model.deleting)
+        XCTAssertTrue(model.opened)
+        XCTAssertEqual(Set(model.sections.flatMap(\.items).map(\.uri)), [first.uri, second.uri])
+
+        service.finishDelete()
+        try await waitFor { !model.deleting }
+        XCTAssertEqual(service.deletedURIs, [first.uri])
+        XCTAssertEqual(model.sections.flatMap(\.items).map(\.uri), [second.uri])
+        XCTAssertFalse(model.opened)
+    }
+
+    func testFilenameDateAndOversizedFileInfoList() throws {
+        let stamped = CameraAlbumItem(file: LunaMediaFile(uri: "/DCIM/LIV_20260818184246.jpg"))
+        let parts = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: try XCTUnwrap(stamped.date))
+        XCTAssertEqual([parts.year, parts.month, parts.day, parts.hour, parts.minute, parts.second],
+                       [2026, 8, 18, 18, 42, 46])
+
+        var body = Data()
+        var index = 0
+        while body.count <= 1_024 * 1_024 {
+            let metadata = try ProtoMessage.integer(field: 7, value: 20260818184246)
+            let info = try ProtoMessage.blob(field: 1, value: Data("/DCIM/IMG_\(index).jpg".utf8))
+                + ProtoMessage.blob(field: 2, value: metadata)
+            body += try ProtoMessage.blob(field: 1, value: info)
+            index += 1
+        }
+        XCTAssertThrowsError(try ProtoMessage(body))
+        let files = try LunaProtocol.fileInfoList(response: body)
+        XCTAssertGreaterThan(files.count, 1_000)
+        XCTAssertEqual(files.last?.metadata?.creationStamp, 20260818184246)
+    }
+
     func testRAWKindClassification() {
         let raw = CameraAlbumItem(file: LunaMediaFile(
             uri: "/DCIM/IMG_0001.dng",
@@ -198,9 +301,11 @@ private final class AlbumAccessStub: CameraAlbumAccess {
     var items: [CameraAlbumStorage: [CameraAlbumItem]]
     var shouldWait = false
     var holdList = false
+    var holdDelete = false
     private(set) var deletedURIs: [String] = []
     private(set) var pendingList: CheckedContinuation<[CameraAlbumItem], Never>?
     private(set) var pendingPreview: CheckedContinuation<CameraAlbumPreviewMedia, Never>?
+    private(set) var pendingDelete: CheckedContinuation<Void, Never>?
 
     init(items: [CameraAlbumItem]) {
         self.items = [.internalStorage: items]
@@ -213,11 +318,44 @@ private final class AlbumAccessStub: CameraAlbumAccess {
         ([.internalStorage, .sdCard], .internalStorage)
     }
 
-    func list(_ storage: CameraAlbumStorage) async throws -> [CameraAlbumItem] {
-        if holdList { return await withCheckedContinuation { pendingList = $0 } }
-        while shouldWait { try await Task.sleep(for: .milliseconds(10)) }
-        guard let items = items[storage] else { throw CameraAlbumError.listing }
-        return items
+    /// 测试里把一次清单拆成多页。nil 表示整表一次回调。
+    var listPageSize: Int?
+    var holdBetweenPages = false
+    private(set) var pendingNextPage: CheckedContinuation<Void, Never>?
+
+    func list(
+        _ storage: CameraAlbumStorage,
+        onPage: @escaping @MainActor ([CameraAlbumItem]) async throws -> Void,
+        onCatalog: @escaping @MainActor ([CameraAlbumItem]) async throws -> Void
+    ) async throws {
+        let resolved: [CameraAlbumItem]
+        if holdList {
+            resolved = await withCheckedContinuation { pendingList = $0 }
+        } else {
+            while shouldWait { try await Task.sleep(for: .milliseconds(10)) }
+            guard let stored = items[storage] else { throw CameraAlbumError.listing }
+            resolved = stored
+        }
+        try Task.checkCancellation()
+        let size = listPageSize ?? max(resolved.count, 1)
+        if resolved.isEmpty { return }
+        var index = 0
+        while index < resolved.count {
+            let end = min(index + size, resolved.count)
+            try await onPage(Array(resolved[index..<end]))
+            index = end
+            if holdBetweenPages, index < resolved.count {
+                await withCheckedContinuation { pendingNextPage = $0 }
+            }
+        }
+        _ = onCatalog
+    }
+
+    func finishNextPage() {
+        holdBetweenPages = false
+        let pending = pendingNextPage
+        pendingNextPage = nil
+        pending?.resume()
     }
 
     func finishList(_ items: [CameraAlbumItem]) {
@@ -239,6 +377,13 @@ private final class AlbumAccessStub: CameraAlbumAccess {
         return await withCheckedContinuation { pendingPreview = $0 }
     }
 
+    func finishDelete() {
+        holdDelete = false
+        let pending = pendingDelete
+        pendingDelete = nil
+        pending?.resume()
+    }
+
     func finishPreview() {
         let pending = pendingPreview
         pendingPreview = nil
@@ -246,6 +391,7 @@ private final class AlbumAccessStub: CameraAlbumAccess {
     }
 
     func delete(_ items: [CameraAlbumItem]) async throws {
+        if holdDelete { await withCheckedContinuation { pendingDelete = $0 } }
         deletedURIs.append(contentsOf: items.map(\.uri))
         for storage in self.items.keys {
             self.items[storage] = self.items[storage]?.filter { item in

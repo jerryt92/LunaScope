@@ -26,7 +26,7 @@ struct CameraConnectionWidget: Widget {
                         Text("activity.camera.title")
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(accent)
-                        Text(title(context))
+                        title(context)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
@@ -39,10 +39,10 @@ struct CameraConnectionWidget: Widget {
                 logoMark(size: 18)
             } compactTrailing: {
                 statusGlyph(context, size: 14)
-                    .accessibilityLabel(Text(title(context)))
+                    .accessibilityLabel(title(context))
             } minimal: {
                 statusGlyph(context, size: 14)
-                    .accessibilityLabel(Text(title(context)))
+                    .accessibilityLabel(title(context))
             }
         }
     }
@@ -56,7 +56,7 @@ struct CameraConnectionWidget: Widget {
                     Text("activity.camera.title")
                         .font(.headline.weight(.semibold))
                         .foregroundStyle(accent)
-                    Text(title(context))
+                    title(context)
                         .font(.subheadline)
                         .foregroundStyle(.white.opacity(0.82))
                         .lineLimit(2)
@@ -109,47 +109,57 @@ struct CameraConnectionWidget: Widget {
             .symbolEffect(.pulse, isActive: pulses(context))
     }
 
-    private func title(_ context: ActivityViewContext<CameraConnectionActivity>) -> LocalizedStringKey {
-        if context.isStale { return "activity.camera.stale" }
-        return switch context.state.status {
-        case .connecting: "activity.camera.connecting"
-        case .connected: "activity.camera.connected"
-        case .recording: "activity.camera.recording"
-        case .continuous: "activity.camera.continuous"
-        case .background: "activity.camera.background"
-        case .verifying: "activity.camera.verifying"
-        case .reconnecting: "activity.camera.reconnecting"
-        case .disconnected: "activity.camera.disconnected"
+    /// 链路仍在时（含后台 / 探活）显示已连接；仅真正连上过程与重连显示连接中。
+    private func title(_ context: ActivityViewContext<CameraConnectionActivity>) -> Text {
+        switch context.state.status {
+        case .connecting, .reconnecting: Text("activity.camera.connecting")
+        case .connected, .background, .verifying: Text("activity.camera.connected")
+        case .recording: Text("activity.camera.recording")
+        case .continuous:
+            if let seconds = context.state.intervalSeconds {
+                Text("activity.camera.continuousInterval \(intervalText(seconds))")
+            } else {
+                Text("activity.camera.continuous")
+            }
+        case .disconnected: Text("activity.camera.disconnected")
         }
     }
 
+    /// 与控制台间隔文案一致：整分钟、整秒，或带小数的秒。
+    private func intervalText(_ seconds: Double) -> String {
+        if seconds >= 60, seconds.truncatingRemainder(dividingBy: 60) == 0 {
+            return String(localized: "console.interval.minutes \(Int(seconds / 60))")
+        }
+        if seconds == seconds.rounded() {
+            return String(localized: "console.interval.seconds \(Int(seconds))")
+        }
+        let text = seconds.formatted(.number.precision(.fractionLength(0...2)))
+        return String(localized: "console.interval.secondsText \(text)")
+    }
+
     private func symbol(_ context: ActivityViewContext<CameraConnectionActivity>) -> String {
-        if context.isStale { return "clock" }
-        return switch context.state.status {
+        switch context.state.status {
         case .recording: "record.circle"
         case .continuous: "timer"
-        case .connected: "link"
+        case .connected, .background, .verifying: "link"
         case .disconnected: "exclamationmark.circle"
-        case .background: "clock"
         default: "arrow.clockwise"
         }
     }
 
     private func glyphColor(_ context: ActivityViewContext<CameraConnectionActivity>) -> Color {
-        if context.isStale { return .secondary }
-        return switch context.state.status {
+        switch context.state.status {
         case .recording, .continuous: .red
         case .disconnected: Color(red: 1, green: 0.59, blue: 0.52)
-        case .connected: accent
+        case .connected, .background, .verifying: accent
         default: accent.opacity(0.9)
         }
     }
 
     private func pulses(_ context: ActivityViewContext<CameraConnectionActivity>) -> Bool {
-        guard !context.isStale else { return false }
         switch context.state.status {
-        case .recording, .continuous, .connecting, .reconnecting, .verifying: return true
-        default: return false
+        case .recording, .continuous, .connecting, .reconnecting: true
+        default: false
         }
     }
 }

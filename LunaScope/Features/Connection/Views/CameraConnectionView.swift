@@ -34,8 +34,6 @@ struct CameraConnectionView: View {
             } footer: {
                 if camera.selectedCamera == nil {
                     Text("console.connection.instructions")
-                } else {
-                    Text("connection.background.detail")
                 }
             }
             if camera.selectedCamera == nil && !camera.cameras.isEmpty {
@@ -72,7 +70,7 @@ struct CameraConnectionView: View {
     }
 
     private var statusText: String {
-        if camera.verifyingConnection { return String(localized: "connection.status.verifying") }
+        // 探活中仍显示已连接，避免与「连接中」文案来回跳。
         if camera.reconnecting { return String(localized: "console.notice.reconnectingGeneric") }
         return camera.statusTitle
     }

@@ -105,8 +105,8 @@ final class CameraController {
     @ObservationIgnored private var noticeClearID = UUID()
     /// 上一帧是否已在限位，用于上升沿提示、避免顶住时刷屏。
     @ObservationIgnored private var gimbalWasAtLimit = false
-    /// 本会话云台是否已翻转（点翻转切换，回中清零）；记忆/恢复用它比对，不依赖 option 68。
-    @ObservationIgnored private var gimbalIsFlipped = false
+    /// 本会话确认过的云台朝向。未按过回中/翻转时为 nil，不能拿它和记忆里的翻转比。
+    @ObservationIgnored private var gimbalIsFlipped: Bool?
 
     struct AlbumLink {
         let generation: UUID
@@ -179,6 +179,11 @@ final class CameraController {
     @ObservationIgnored private var lastCaptureReportAt = Date.distantPast
     @ObservationIgnored private var pendingPhoto: UUID?
     @ObservationIgnored private var photoCompletion: Bool?
+    /// perform 正在执行拍照或连拍。写卡结束后由拍摄状态继续带动快门转圈。
+    @ObservationIgnored private var shutterCommand = false
+    /// 上一张还在处理时又按下的快门次数，当前命令结束后继续拍。
+    @ObservationIgnored private var queuedShutterPresses = 0
+    private(set) var deletingMedia = false
     private(set) var photoAddDenied = false
     /// App 侧连续拍摄：底层仍用单张照片模式。
     private(set) var continuousPhoto = false
@@ -203,10 +208,15 @@ final class CameraController {
     init(memoryStore: ConsoleMemoryStore? = nil) {
         let memoryStore = memoryStore ?? ConsoleMemoryStore()
         self.memoryStore = memoryStore
-        do { memory = try memoryStore.load() }
+        let loaded: ConsoleMemory
+        do { loaded = try memoryStore.load() }
         catch {
-            memory = ConsoleMemory()
+            loaded = ConsoleMemory()
             AppLog.error(error, context: "console.memory.load")
+        }
+        memory = loaded
+        if let interval = loaded.continuousInterval {
+            continuousInterval = interval
         }
         let profiles = ConsoleCameraProfile.bundled
         let advertisedModels = profiles.flatMap { profile in
@@ -277,10 +287,43 @@ final class CameraController {
             && !restartingPreview && !verifyingConnection && albumControlOwner == nil
     }
     var hasPendingSettings: Bool { !settingWrites.isEmpty }
+    /// 命令进行时的统一提示。拍照不使用文案。
+    enum CommandPrompt: Equatable {
+        case processing
+        case deletingMedia
+
+        var title: LocalizedStringResource {
+            switch self {
+            case .processing: "console.capture.working"
+            case .deletingMedia: "album.deleting.media"
+            }
+        }
+    }
+
+    /// perform 的提示方式。拍照只让快门转圈。
+    private enum CommandPresentation {
+        case processing
+        case shutter
+    }
+
     /// 仅变焦同步时不打「正在处理」，避免拖动刻度时右下角闪提示。
     var showsParameterWorkingIndicator: Bool {
         guard syncingSettings else { return false }
         return settingWrites.contains { $0.zoomMode == nil }
+    }
+    /// 命令进行中的统一文案。拍照不走这里，由快门按钮自己转圈。
+    var commandPrompt: CommandPrompt? {
+        if deletingMedia { return .deletingMedia }
+        if showsShutterActivity { return nil }
+        if busy || showsParameterWorkingIndicator || processingCapture { return .processing }
+        return nil
+    }
+    /// 拍照或连拍期间，以及照片仍在写卡时，快门按钮自己转圈。
+    var showsShutterActivity: Bool {
+        if shutterCommand || pendingPhoto != nil { return true }
+        guard shootingMode == .photo || shootingMode == .pano else { return false }
+        guard !recording, snapshot?.recording.value != .transitioning else { return false }
+        return capture?.isProcessingCapture == true
     }
     var canControl: Bool { canWriteSettings && !syncingSettings }
     var recording: Bool { snapshot?.recording.value == .recording }
@@ -303,11 +346,6 @@ final class CameraController {
     var canTakePhoto: Bool {
         guard canChangeMode, let shootingMode, shootingMode.isPhoto else { return false }
         return cameraProfile?.captureModes.contains(ConsoleCaptureMode(shootingMode)) == true
-    }
-
-    /// 连续拍摄进行中可随时停止；未开始时与单张共用 canTakePhoto。
-    var canToggleContinuousCapture: Bool {
-        continuousPhoto && (continuousShooting || canTakePhoto)
     }
 
     var modeLabel: String {
@@ -425,7 +463,8 @@ final class CameraController {
     }
 
     /// 清理连接但保留已选相机与记忆，供断线重连复用。不离开相机网络。
-    private func teardown() {
+    /// `preserveContinuous` 为真时保留连续拍摄，等重连后继续按间隔触发。
+    private func teardown(preserveContinuous: Bool = false) {
         attempt = UUID()
         cancelForegroundProbe()
         connectionTask?.cancel()
@@ -465,20 +504,25 @@ final class CameraController {
         reportedGimbalMode = nil
         gimbalSleeping = false
         gimbalWasAtLimit = false
-        gimbalIsFlipped = false
+        gimbalIsFlipped = nil
         pictureReady = false
         pictureStalled = false
         lastKeyframeRequest = .distantPast
         lastCaptureReportAt = .distantPast
         busy = false
+        shutterCommand = false
+        queuedShutterPresses = 0
+        deletingMedia = false
         settingTask?.cancel()
         settingTask = nil
         syncingSettings = false
         restartingPreview = false
         pendingPhoto = nil
         photoCompletion = nil
-        stopContinuousCapture()
-        continuousPhoto = false
+        if !preserveContinuous {
+            stopContinuousCapture()
+            continuousPhoto = false
+        }
         albumControlOwner = nil
         preview.reset()
     }
@@ -544,7 +588,7 @@ final class CameraController {
                             || (preview.lastSourceFrameAt ?? .distantPast) >= probeStartedAt { return }
                         if retry == 2 {
                             AppLog.error(error, context: "connection.foregroundProbe")
-                            teardown()
+                            teardown(preserveContinuous: true)
                             startReconnect(to: camera, reason: nil)
                             return
                         }
@@ -725,6 +769,8 @@ final class CameraController {
         guard shootingMode != mode || continuousPhoto else { return }
         stopContinuousCapture()
         continuousPhoto = false
+        // 只有明确选回单张照片才关掉连拍偏好；切到视频仍记住上次连拍。
+        if mode == .photo { rememberContinuousPreference() }
         if shootingMode == mode, switchingContinuousOff { return }
         let settings = selectedParameters[ConsoleCaptureMode(mode)]
         selectedMode = mode
@@ -746,6 +792,7 @@ final class CameraController {
         if continuousPhoto, shootingMode == .photo { return }
         stopContinuousCapture()
         continuousPhoto = true
+        rememberContinuousPreference()
         if shootingMode == .photo { return }
         let settings = selectedParameters[.photo]
         selectedMode = .photo
@@ -760,8 +807,9 @@ final class CameraController {
     }
 
     func setContinuousInterval(_ interval: ConsoleShootInterval) {
-        guard continuousPhoto, !continuousShooting else { return }
+        guard continuousPhoto else { return }
         continuousInterval = interval
+        rememberContinuousPreference()
     }
 
     func toggleContinuousCapture() {
@@ -777,12 +825,14 @@ final class CameraController {
         continuousShooting = false
     }
 
+    /// 开始按间隔拍照。能拍就触发，然后固定等待间隔；单张失败不结束，只有彻底断联才停。
     private func startContinuousCapture() {
-        guard canToggleContinuousCapture, !continuousShooting, continuousPhoto, shootingMode == .photo else { return }
+        guard !continuousShooting, continuousPhoto, shootingMode == .photo else { return }
         let generation = UUID()
         continuousGeneration = generation
         continuousShooting = true
-        perform(String(localized: "console.error.continuous")) { target in
+        Task { @MainActor [weak self] in
+            guard let self else { return }
             // 本段连拍再挂一份后台任务，与 Lifetime 的音频保活叠加，降低刷新时序空窗。
             let localBackground = ConnectionBackgroundWindow()
             localBackground.begin(keepAlive: true)
@@ -792,51 +842,65 @@ final class CameraController {
                     self.continuousShooting = false
                 }
             }
-            var consecutiveFailures = 0
             while self.continuousGeneration == generation, self.continuousShooting {
-                let started = Date()
-                do {
-                    try await self.captureStill(through: target, announce: false)
-                    consecutiveFailures = 0
-                } catch is CancellationError {
-                    throw CancellationError()
-                } catch {
-                    // 后台瞬时断链 / busy 不直接结束整段连拍，短暂重试。
-                    consecutiveFailures += 1
-                    AppLog.error(error, context: "console.continuous.retry")
-                    guard consecutiveFailures <= 3,
-                          self.continuousGeneration == generation,
-                          self.continuousShooting else { throw error }
-                    try await Task.sleep(for: .milliseconds(400 * consecutiveFailures))
-                    continue
+                if self.continuousLinkLost { break }
+                while self.continuousGeneration == generation, self.continuousShooting,
+                      !self.continuousLinkLost, !self.canTakePhoto {
+                    try? await Task.sleep(for: .milliseconds(200))
                 }
-                let completed = Date()
-                guard self.continuousGeneration == generation, self.continuousShooting else { break }
-                let delay = ConsoleContinuousCapture.delayBeforeNextShot(
-                    interval: self.continuousInterval.seconds, started: started, completed: completed)
-                if delay > 0 {
-                    try await Task.sleep(for: .seconds(delay))
+                guard self.continuousGeneration == generation, self.continuousShooting,
+                      !self.continuousLinkLost else { break }
+                let firedAt = Date()
+                self.perform(String(localized: "console.error.photo"), presentation: .shutter, reportsError: false) { target in
+                    try await self.captureStill(through: target)
                 }
-            }
-            if self.continuousGeneration == generation {
-                self.showNotice(String(localized: "console.notice.continuousStopped"))
+                let next = ConsoleContinuousCapture.nextTrigger(
+                    firedAt: firedAt, interval: self.continuousInterval.seconds)
+                while Date() < next {
+                    if self.continuousGeneration != generation || !self.continuousShooting || self.continuousLinkLost {
+                        break
+                    }
+                    let slice = min(0.25, next.timeIntervalSinceNow)
+                    if slice <= 0 { break }
+                    try? await Task.sleep(for: .seconds(slice))
+                }
             }
         }
+    }
+
+    /// 重连耗尽或用户断开才算彻底断联；重连过程中连拍继续等。
+    private var continuousLinkLost: Bool {
+        selectedCamera == nil || connectionDropped
     }
 
     func takePhoto() {
-        guard canTakePhoto, !continuousPhoto, shootingMode != nil else { return }
-        perform(String(localized: "console.error.photo")) { target in
-            try await self.captureStill(through: target, announce: true)
+        guard let mode = shootingMode, mode.isPhoto else { return }
+        guard cameraProfile?.captureModes.contains(ConsoleCaptureMode(mode)) == true else { return }
+        guard connected, albumControlOwner == nil, !reconnecting, !restartingPreview else { return }
+        // 处理中仍接受按下；命令通道忙就排队，空闲后马上拍下一张。
+        if busy {
+            queuedShutterPresses += 1
+            return
+        }
+        guard canControl else { return }
+        perform(String(localized: "console.error.photo"), presentation: .shutter) { target in
+            try await self.captureStill(through: target)
         }
     }
 
-    /// 拍一张并等到完成反馈；连续拍摄的下一张必须等这里返回后才能触发。
-    private func captureStill(through target: LunaCameraSession, announce: Bool) async throws {
+    /// 拍一张并等到完成。进度只反映在快门转圈上，不再弹出拍摄结果提示。
+    private func captureStill(through target: LunaCameraSession) async throws {
         let photoMode = shootingMode ?? .photo
         try await applyMode(photoMode, through: target)
         try await ensureSelectedParameters(in: photoMode, through: target)
         try validate(target)
+        // 上一张仍在写卡时等它结束，不把这次快门当成失败。
+        if capture?.isSettledIdle != true {
+            for _ in 0..<180 where capture?.isSettledIdle != true {
+                try await Task.sleep(for: .milliseconds(250))
+                try validate(target)
+            }
+        }
         guard capture?.isSettledIdle == true else { throw ControlError.cameraBusy }
         let photo = UUID()
         pendingPhoto = photo
@@ -850,21 +914,12 @@ final class CameraController {
         let request = try LunaProtocol.takePicture(mode: photoMode == .pano ? .gimbalPano : .normal)
         _ = try await target.control(request, timeout: .seconds(65))
         try validate(target)
-        if announce {
-            showNotice(String(localized: "console.notice.shutter"))
-        }
         for poll in 0..<180 {
             if photoCompletion != nil || (poll >= 12 && capture?.isSettledIdle == true) { break }
             try await Task.sleep(for: .milliseconds(250))
             try validate(target)
         }
         if photoCompletion == false { throw ControlError.captureFailed }
-        if announce {
-            showNotice(
-                photoCompletion == true ? String(localized: "console.notice.saved")
-                    : String(localized: "console.notice.acknowledged")
-            )
-        }
     }
 
     func toggleRecording() {
@@ -980,11 +1035,11 @@ final class CameraController {
         perform(recenter ? String(localized: "console.error.recenter") : String(localized: "console.error.flip")) { target in
             let request = try recenter ? LunaProtocol.gimbalRecenterRequest() : LunaProtocol.gimbalFlipRequest()
             _ = try await target.control(request)
-            // 回中视为正向；翻转切换本会话朝向记录。
+            // 连接后先当正向。回中回到正向；翻转相对这个正向切换。没按过这两键时不和记忆比。
             if recenter {
                 self.gimbalIsFlipped = false
             } else {
-                self.gimbalIsFlipped.toggle()
+                self.gimbalIsFlipped = !(self.gimbalIsFlipped ?? false)
             }
         }
     }
@@ -1328,6 +1383,7 @@ final class CameraController {
         if continuousPhoto, let interval = settings.continuousInterval {
             continuousInterval = interval
         }
+        rememberContinuousPreference()
         settingWrites.removeAll()
         settingEpoch.removeAll()
         settingsError = nil
@@ -1636,7 +1692,7 @@ final class CameraController {
         guard canRememberGimbal, let cameraID = selectedCamera?.id else { return }
         perform(String(localized: "console.error.gimbalSave")) { target in
             let angles = try await self.gimbalCommands(through: target).readPosition(cameraID: cameraID)
-            // 角度来自机身回读，翻转用来自本会话的翻转记录。
+            // 角度来自机身回读。翻转只在本会话确认过朝向时写入，避免重连后的默认值盖掉真实方向。
             guard let position = ConsoleGimbalPosition(cameraID: cameraID, yaw: angles.yaw, pitch: angles.pitch,
                                                        isFlipped: self.gimbalIsFlipped) else {
                 throw ControlError.gimbalPosition
@@ -1647,18 +1703,23 @@ final class CameraController {
         }
     }
 
+    /// 转到这台相机记忆的角度。点击时先停掉正在进行的主体追踪，避免追踪把云台拉离记忆点。
     func restoreGimbalPosition() {
         guard canRememberGimbal, let saved = savedGimbalForCamera,
               let position = ConsoleGimbalPosition(cameraID: saved.cameraID, yaw: saved.yaw, pitch: saved.pitch,
                                                    isFlipped: saved.isFlipped) else { return }
         perform(String(localized: "console.error.gimbalRestore")) { target in
-            // 只归位；翻转不一致时提示用户自行翻转。
-            let flipMismatch = try await self.gimbalCommands(through: target)
-                .restore(position, currentFlip: self.gimbalIsFlipped)
-            if flipMismatch {
+            // 追踪还占着云台时直接转角会被拒绝；先等取消完成，再归位。
+            try await self.stopSubjectTracking(through: target)
+            var commands = self.gimbalCommands(through: target)
+            commands.atAxisLimit = { self.gimbalWasAtLimit }
+            switch try await commands.restore(position, currentFlip: self.gimbalIsFlipped) {
+            case .flipMismatch:
                 self.showNotice(String(localized: "console.notice.gimbalFlipMismatch"))
-            } else {
+            case .arrived:
                 self.showNotice(String(localized: "console.notice.gimbalRestored"))
+            case .axisLimit:
+                break
             }
         }
     }
@@ -1685,6 +1746,18 @@ final class CameraController {
 
     func notePhotoAddDenied() { photoAddDenied = true }
     func clearPhotoAddDenied() { photoAddDenied = false }
+
+    /// 有追踪时先发取消，并等到相机关掉追踪后再返回。本地提前清掉会和后续转角抢命令。
+    private func stopSubjectTracking(through target: LunaCameraSession) async throws {
+        guard tracking.active else { return }
+        _ = try await target.control(LunaProtocol.cancelTrackingRequest, timeout: .seconds(3))
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(3))
+        while tracking.active {
+            if clock.now >= deadline { throw ControlError.gimbalPosition }
+            try await Task.sleep(for: .milliseconds(100))
+        }
+    }
 
     private func gimbalCommands(through target: LunaCameraSession) -> ConsoleGimbalCommands {
         ConsoleGimbalCommands(session: target, checkIdle: { try await self.requireCameraIdle(target) }) {
@@ -1764,15 +1837,39 @@ final class CameraController {
         throw ControlError.gimbalAsleep
     }
 
+    /// 记下连续拍摄开关和间隔，不弹出保存提示。
+    private func rememberContinuousPreference() {
+        var next = memory
+        next.continuousPhoto = continuousPhoto
+        next.continuousInterval = continuousInterval
+        guard next != memory else { return }
+        do {
+            try memoryStore.save(next)
+            memory = next
+        } catch {
+            AppLog.error(error, context: "console.memory.continuous")
+        }
+    }
+
     private func adoptMode(_ mode: LunaShootingMode) {
         guard reportedMode != mode else { return }
         cancelParameterRead()
         subjectTracking.clear()
         reportedMode = mode
+        restoreContinuousPreference(for: mode)
         if connected {
             pictureStalled = false
             previewDeadline = .now.addingTimeInterval(8)
             scheduleParameterRead()
+        }
+    }
+
+    /// 相机读到照片模式，且上次开着连续拍摄时，回到 App 侧连续拍摄。已选其它模式时不改。
+    private func restoreContinuousPreference(for mode: LunaShootingMode) {
+        guard mode == .photo, memory.continuousPhoto, selectedMode == nil || selectedMode == .photo else { return }
+        continuousPhoto = true
+        if let interval = memory.continuousInterval {
+            continuousInterval = interval
         }
     }
 
@@ -1855,8 +1952,14 @@ final class CameraController {
                 cameras.append(camera)
             }
         case .phase(let phase):
-            // The backend emits idle before connect and before reporting an unexpected drop.
-            if phase != .idle { self.phase = phase }
+            // Backend 在断线前会发 idle；已直播时忽略回退到连接过程态，避免已连接/连接中反复跳。
+            if phase == .idle {
+                break
+            } else if self.phase == .streaming, !reconnecting, phase != .streaming {
+                break
+            } else {
+                self.phase = phase
+            }
             if phase == .streaming {
                 privacy.stop()
                 previewDeadline = .now.addingTimeInterval(8)
@@ -1887,7 +1990,7 @@ final class CameraController {
             if reconnecting { return }
             let wasStreaming = phase == .streaming
             let camera = selectedCamera
-            teardown()
+            teardown(preserveContinuous: wasStreaming && camera != nil)
             if wasStreaming, let camera {
                 startReconnect(to: camera, reason: reason)
             } else {
@@ -2085,17 +2188,32 @@ final class CameraController {
         guard session === target, connected else { throw CancellationError() }
     }
 
-    private func perform(_ title: String, action: @escaping @MainActor (LunaCameraSession) async throws -> Void) {
+    /// 相册删除占用命令提示，文案是「正在删除媒体」。
+    func setDeletingMedia(_ active: Bool) {
+        deletingMedia = active
+    }
+
+    /// `reportsError` 为假时只记日志，不弹失败提示，也不因此结束调用方的循环。
+    private func perform(
+        _ title: String, presentation: CommandPresentation = .processing, reportsError: Bool = true,
+        action: @escaping @MainActor (LunaCameraSession) async throws -> Void
+    ) {
         guard canControl, let target = session else { return }
         releaseGimbal()
         busy = true
+        if presentation == .shutter { shutterCommand = true }
         dismissTransientFeedback()
         Task { [weak self] in
             guard let self, session === target else { return }
             defer {
                 if session === target {
                     busy = false
-                    startSettingWrites()
+                    shutterCommand = false
+                    if queuedShutterPresses > 0 {
+                        queuedShutterPresses -= 1
+                        takePhoto()
+                    }
+                    if !busy { startSettingWrites() }
                 }
             }
             do {
@@ -2103,7 +2221,12 @@ final class CameraController {
             } catch is CancellationError {
                 return
             } catch {
-                if session === target { report(title, error: error) }
+                guard session === target else { return }
+                if reportsError {
+                    report(title, error: error)
+                } else {
+                    AppLog.error(error, context: "console.continuous")
+                }
             }
         }
     }

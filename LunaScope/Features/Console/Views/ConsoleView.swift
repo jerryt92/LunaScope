@@ -17,6 +17,8 @@ struct ConsoleView: View {
     @State private var customIntervalDraft = ""
     @State private var customIntervalUnit = ConsoleShootInterval.Unit.seconds
     @State private var showsCustomInterval = false
+    /// 云台位置菜单里点「记忆」后弹出确认。
+    @State private var confirmsGimbalSave = false
     @ScaledMetric(relativeTo: .caption2) private var batteryRowHeight: CGFloat = 22
     /// 设备图标槽宽，保证机身 / 屏幕两行胶囊左缘对齐且等宽。
     @ScaledMetric(relativeTo: .caption2) private var batteryDeviceIconWidth: CGFloat = 12
@@ -44,7 +46,7 @@ struct ConsoleView: View {
                         .ignoresSafeArea()
                 } else {
                     shootingLayout(in: geometry.size, landscape: landscape)
-                        .padding(Layout.padding)
+                        .padding(Layout.spacing)
                 }
             }
             .toolbarVisibility(.hidden, for: .navigationBar)
@@ -106,6 +108,12 @@ struct ConsoleView: View {
         } message: {
             Text(camera.pictureInPicture.startError ?? "")
         }
+        .alert("console.gimbal.saveConfirmTitle", isPresented: $confirmsGimbalSave) {
+            Button("console.gimbal.saveConfirm", action: camera.saveGimbalPosition)
+            Button("common.cancel", role: .cancel) {}
+        } message: {
+            Text("console.gimbal.saveConfirmMessage")
+        }
         .overlay {
             ConsoleNoticeOverlay(camera: camera)
         }
@@ -121,31 +129,44 @@ struct ConsoleView: View {
     }
 
     private func shootingLayout(in size: CGSize, landscape: Bool) -> some View {
-        let contentWidth = max(0, size.width - 2 * Layout.padding)
-        let contentHeight = max(0, size.height - 2 * Layout.padding)
+        let contentWidth = max(0, size.width - 2 * Layout.spacing)
+        let contentHeight = max(0, size.height - 2 * Layout.spacing)
         let availableWidth = max(0, contentWidth - Layout.spacing)
         let preferredSidebarWidth = min(Layout.maximumSidebarWidth, max(Layout.controlsWidth, availableWidth * 0.36))
         let sidebarWidth = min(availableWidth * 0.48, preferredSidebarWidth)
         let previewColumnWidth = landscape ? availableWidth - sidebarWidth : contentWidth
-        // 竖屏为参数/云台留空；横屏用列高。外框比例固定，高度按舞台比例从宽度推出。
-        let previewMaxHeight = landscape ? contentHeight : max(160, contentHeight * 0.52)
+        let showsZoom = camera.zoomLimits?.offersChoice == true
+        // 横屏变焦在取景下方，4:3 外框只用扣掉变焦后的高度，避免整框被推出屏幕。
+        let zoomBand = showsZoom ? ConsoleZoomControls.barHeight + Layout.spacing : 0
+        let previewMaxHeight = landscape ? max(1, contentHeight - zoomBand) : previewColumnWidth * 3 / 4
         let layout = landscape ? AnyLayout(HStackLayout(alignment: .top, spacing: Layout.spacing))
             : AnyLayout(VStackLayout(spacing: Layout.spacing))
+        // 外框就是这块区域里的最大 4:3，高度不再把上下空白算进去。
+        let stage = AVMakeRect(
+            aspectRatio: Layout.previewStageAspect,
+            insideRect: CGRect(x: 0, y: 0, width: max(1, previewColumnWidth), height: max(1, previewMaxHeight)))
         return layout {
-            if !landscape { portraitParameters(in: size) }
+            if !landscape { portraitParameters(width: contentWidth, windowHeight: size.height) }
+            // 横竖屏共用同一个取景视图，旋转时不重建图传宿主。
             VStack(spacing: Layout.spacing) {
-                viewfinder(maxWidth: previewColumnWidth, maxHeight: previewMaxHeight)
-                if let limits = camera.zoomLimits {
+                flexibleViewfinder(maxWidth: previewColumnWidth)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: stage.height)
+                if let limits = camera.zoomLimits, limits.offersChoice {
                     ConsoleZoomControls(camera: camera, limits: limits)
                 }
             }
-            .frame(width: landscape ? previewColumnWidth : nil)
+            .frame(width: landscape ? previewColumnWidth : nil,
+                   height: landscape ? contentHeight : nil,
+                   alignment: .top)
             if landscape {
                 landscapeSidebar(width: sidebarWidth)
             } else {
-                portraitDock(availableHeight: size.height)
+                portraitDock(availableHeight: contentHeight)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .frame(width: contentWidth, height: contentHeight, alignment: .top)
     }
 
     /// 图传缓冲画幅（旋转前）；8234 先于解码器时优先用流尺寸。
@@ -177,14 +198,20 @@ struct ConsoleView: View {
     }
 
     private enum Layout {
-        static let controlsWidth: CGFloat = 294
-        static let maximumSidebarWidth: CGFloat = 400
+        static let controlsWidth: CGFloat = 360
+        static let maximumSidebarWidth: CGFloat = 460
         static let compactSidebarWidth: CGFloat = 250
         static let maximumDockWidth: CGFloat = 560
         static let spacing: CGFloat = 10
         static let padding: CGFloat = 12
-        static let joystick: CGFloat = 86
+        static let joystick: CGFloat = 120
         static let buttonSize: CGFloat = 44
+        /// 云台回中、翻转、模式和位置按钮。
+        static let gimbalButton: CGFloat = 56
+        /// 拍照键比开始键更宽，两者并排且不压到摇杆。
+        static let shutterWidth: CGFloat = 108
+        static let shutterHeight: CGFloat = 76
+        static let continuousWidth: CGFloat = 72
         /// 取景右上角全屏 / 画中画按钮，略小于其他操作钮。
         static let previewControlSize: CGFloat = 32
         static let minimumExpandedHeight: CGFloat = 300
@@ -194,27 +221,35 @@ struct ConsoleView: View {
     }
 
     private func landscapeSidebar(width: CGFloat) -> some View {
-        ScrollView(.vertical) {
+        let compact = width < Layout.compactSidebarWidth
+        return ViewThatFits(in: .vertical) {
             VStack(spacing: Layout.spacing) {
-                shootingDock(compact: width < Layout.compactSidebarWidth)
                 parametersPanel(width: width)
+                Spacer(minLength: 0)
+                shootingDock(compact: compact)
             }
+            ScrollView(.vertical) {
+                VStack(spacing: Layout.spacing) {
+                    parametersPanel(width: width)
+                    shootingDock(compact: compact)
+                }
+            }
+            .scrollBounceBehavior(.basedOnSize)
         }
-        .scrollBounceBehavior(.basedOnSize)
         .frame(width: width)
-        .frame(maxHeight: .infinity)
+        .frame(maxHeight: .infinity, alignment: .top)
         .clipped()
         .contentShape(Rectangle())
         .accessibilityIdentifier("console.landscape.controls")
     }
 
     @ViewBuilder
-    private func portraitParameters(in size: CGSize) -> some View {
-        let panel = parametersPanel(width: size.width - 2 * Layout.padding)
-        if typeSize.isAccessibilitySize || size.height < Layout.minimumExpandedHeight {
+    private func portraitParameters(width: CGFloat, windowHeight: CGFloat) -> some View {
+        let panel = parametersPanel(width: width)
+        if typeSize.isAccessibilitySize || windowHeight < Layout.minimumExpandedHeight {
             ScrollView { panel }
                 .scrollBounceBehavior(.basedOnSize)
-                .frame(height: size.height * 0.42)
+                .frame(height: windowHeight * 0.42)
         } else {
             panel.fixedSize(horizontal: false, vertical: true)
         }
@@ -300,15 +335,17 @@ struct ConsoleView: View {
         .ignoresSafeArea()
     }
 
-    /// 预览面板：外框比例固定；画面按当前画幅在黑底上 letterbox / pillarbox。
-    private func viewfinder(maxWidth: CGFloat, maxHeight: CGFloat) -> some View {
-        let slot = CGRect(x: 0, y: 0, width: max(1, maxWidth), height: max(1, maxHeight))
-        let stage = AVMakeRect(aspectRatio: Layout.previewStageAspect, insideRect: slot)
-        return viewfinderStage(size: CGSize(width: stage.width, height: stage.height))
-            .frame(width: stage.width, height: stage.height)
-            .frame(maxWidth: maxWidth, alignment: .center)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .transaction { $0.animation = nil }
+    /// 预览面板：在分到的区域内取最大 4:3，外框比例不随剩余高度拉伸；画面按当前画幅在黑底上 letterbox / pillarbox。
+    private func flexibleViewfinder(maxWidth: CGFloat) -> some View {
+        GeometryReader { proxy in
+            let slot = CGRect(x: 0, y: 0, width: min(maxWidth, proxy.size.width), height: max(1, proxy.size.height))
+            let stage = AVMakeRect(aspectRatio: Layout.previewStageAspect, insideRect: slot)
+            viewfinderStage(size: CGSize(width: stage.width, height: stage.height))
+                .frame(width: stage.width, height: stage.height)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .transaction { $0.animation = nil }
+        }
     }
 
     /// 固定 4:3 舞台 + 画幅适配；4:3 铺满，其它画幅留黑边。
@@ -349,8 +386,12 @@ struct ConsoleView: View {
             }
         }
         .overlay(alignment: .bottomTrailing) {
-            if previewWorking, !camera.pictureInPicture.isActive {
-                Label("console.capture.working", systemImage: "hourglass")
+            if let prompt = camera.commandPrompt, !camera.pictureInPicture.isActive {
+                Label {
+                    Text(prompt.title)
+                } icon: {
+                    Image(systemName: "hourglass")
+                }
                     .font(.caption2.weight(.semibold))
                     .foregroundStyle(Palette.accent)
                     .padding(.horizontal, 8)
@@ -358,7 +399,7 @@ struct ConsoleView: View {
                     .background(.black.opacity(0.65), in: Capsule())
                     .padding([.trailing, .bottom], Layout.padding)
                     .allowsHitTesting(false)
-                    .accessibilityIdentifier("console.capture.working")
+                    .accessibilityIdentifier(prompt == .processing ? "console.capture.working" : "album.deleting.media")
             }
         }
         .clipped()
@@ -511,12 +552,22 @@ struct ConsoleView: View {
     }
 
     private func shootingDock(compact: Bool = false) -> some View {
-        let controls = compact ? AnyLayout(VStackLayout(spacing: Layout.spacing)) : AnyLayout(HStackLayout(spacing: Layout.spacing))
         let showsGimbal = camera.cameraProfile?.gimbalChoices.isEmpty != true
         return VStack(alignment: .leading, spacing: Layout.spacing) {
-            controls {
-                if showsGimbal { joystick }
-                shutterButton
+            Group {
+                if compact {
+                    VStack(alignment: .trailing, spacing: Layout.spacing) {
+                        if showsGimbal { joystick.frame(maxWidth: .infinity, alignment: .leading) }
+                        shutterCluster
+                    }
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                } else {
+                    HStack(alignment: .center, spacing: Layout.spacing) {
+                        if showsGimbal { joystick }
+                        Spacer(minLength: Layout.spacing)
+                        shutterCluster
+                    }
+                }
             }
             if showsGimbal {
                 gimbalActions(compact: compact)
@@ -542,36 +593,66 @@ struct ConsoleView: View {
             .accessibilityIdentifier("console.gimbal.pad")
     }
 
-    private var shutterButton: some View {
-        let continuous = camera.continuousPhoto
-        let photo = !camera.recording && (camera.shootingMode?.isPhoto ?? true)
-        let title: LocalizedStringKey = {
-            if continuous {
-                return camera.continuousShooting ? "console.capture.continuousStop" : "console.capture.continuousStart"
+    /// 连续拍摄的开始/停止键，固定在拍照键左侧。
+    private var shutterCluster: some View {
+        HStack(spacing: Layout.spacing) {
+            if camera.continuousPhoto {
+                continuousStartButton
             }
-            return photo ? "console.capture.photo"
-                : camera.recording ? "console.capture.stop" : "console.capture.record"
-        }()
-        let icon = continuous
-            ? (camera.continuousShooting ? "stop.fill" : "timer")
-            : (photo ? "camera.fill" : camera.recording ? "stop.fill" : "record.circle")
+            shutterButton
+        }
+        .fixedSize(horizontal: true, vertical: false)
+    }
+
+    private var continuousStartButton: some View {
+        let running = camera.continuousShooting
         return Button {
-            if continuous { camera.toggleContinuousCapture() }
-            else if photo { camera.takePhoto() }
+            camera.toggleContinuousCapture()
+        } label: {
+            Label(running ? "console.capture.continuousStop" : "console.capture.continuousStart",
+                  systemImage: running ? "stop.fill" : "timer")
+                .labelStyle(.iconOnly)
+                .font(.title2)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .buttonStyle(.plain)
+        .frame(width: Layout.continuousWidth, height: Layout.shutterHeight)
+        .background(Color.white.opacity(0.16), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .accessibilityIdentifier("console.capture.continuous")
+    }
+
+    private var shutterButton: some View {
+        let photo = !camera.recording && (camera.shootingMode?.isPhoto ?? true)
+        let title: LocalizedStringKey = photo ? "console.capture.photo"
+            : camera.recording ? "console.capture.stop" : "console.capture.record"
+        let icon = photo ? "camera.fill" : camera.recording ? "stop.fill" : "record.circle"
+        // 拍照进行中用转圈替换相机图标；处理中仍可继续按。
+        let spinning = camera.showsShutterActivity
+        return Button {
+            if photo { camera.takePhoto() }
             else { camera.toggleRecording() }
         } label: {
-            Label(title, systemImage: icon).labelStyle(.iconOnly)
+            Group {
+                if spinning {
+                    ProgressView()
+                        .controlSize(.regular)
+                        .tint(.white)
+                        .accessibilityLabel("console.capture.photo")
+                } else {
+                    Label(title, systemImage: icon)
+                        .labelStyle(.iconOnly)
+                        .font(.title2)
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .buttonStyle(.glassProminent)
-        .tint(continuous || !photo ? (camera.continuousShooting || camera.recording ? .red : Palette.accent) : Palette.accent)
+        .tint(photo ? Palette.accent : (camera.recording ? .red : Palette.accent))
         .controlSize(.large)
-        .disabled(continuous ? !camera.canToggleContinuousCapture
-                    : photo ? !camera.canTakePhoto : !camera.canSet(.recording) || !recordStateKnown)
+        .disabled(spinning ? false : photo ? !camera.canTakePhoto : !camera.canSet(.recording) || !recordStateKnown)
         .accessibilityIdentifier("console.capture.shutter")
-        .frame(maxWidth: .infinity)
-        .overlay(alignment: .trailing) {
-            if camera.busy { ProgressView().controlSize(.small).accessibilityLabel("console.capture.working") }
-        }
+        .frame(width: Layout.shutterWidth, height: Layout.shutterHeight)
     }
 
     /// 顶部配置栏槽位；拍摄间隔紧跟模式，其余按原有顺序。
@@ -593,15 +674,15 @@ struct ConsoleView: View {
         return slots
     }
 
-    /// 横竖屏都最多两行；同行等宽。槽位过多时加宽每行列数，保证全部可见。
+    /// 按最小宽度换行，同行等宽；不再为了压进两行把每一项挤窄。
     private func parametersPanel(width: CGFloat) -> some View {
         let slots = parameterSlots
+        let inset: CGFloat = 4
+        let contentWidth = max(0, width - inset * 2)
         let minWidth = typeSize.isAccessibilitySize ? ConsoleMenuLabel.minItemWidth * 1.35
             : ConsoleMenuLabel.minItemWidth
         let spacing = ConsoleMenuLabel.spacing
-        let widthBased = max(1, Int(floor((width + spacing) / (minWidth + spacing))))
-        let neededForTwoRows = max(1, Int(ceil(Double(slots.count) / 2)))
-        let perRow = max(widthBased, neededForTwoRows)
+        let perRow = max(1, Int(floor((contentWidth + spacing) / (minWidth + spacing))))
         let rows = parameterRows(slots, perRow: perRow)
         return VStack(spacing: spacing) {
             ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
@@ -728,7 +809,7 @@ struct ConsoleView: View {
             ConsoleMenuLabel(title: "console.interval.title",
                              value: camera.continuousInterval.summaryLabel)
         }
-        .consoleMenu(camera.canEditShootingSettings && !camera.continuousShooting)
+        .consoleMenu(camera.canEditShootingSettings || camera.continuousShooting)
         .accessibilityIdentifier("console.interval.menu")
     }
 
@@ -801,32 +882,70 @@ struct ConsoleView: View {
         return state == .recording || state == .idle
     }
 
-    /// 回中 / 翻转，以及模式菜单 + 记忆 / 恢复；模式收成小按钮以压低面板高度。
+    /// 回中 / 翻转保持正方形；模式和位置占满剩余宽度。窄栏时文字按钮另起一行。
     private func gimbalActions(compact: Bool) -> some View {
         let stacked = compact || typeSize.isAccessibilitySize
-        let layout = stacked ? AnyLayout(VStackLayout(spacing: 6)) : AnyLayout(HStackLayout(spacing: 6))
+        let aim = HStack(spacing: 6) {
+            gimbalAimButton("console.gimbal.center", icon: "scope", recenter: true)
+            gimbalAimButton("console.gimbal.flip", icon: "arrow.left.arrow.right", recenter: false)
+        }
+        let menus = HStack(spacing: 6) {
+            gimbalModeMenu
+            gimbalPositionMenu
+        }
+        .frame(maxWidth: .infinity)
         return VStack(alignment: .leading, spacing: 6) {
             if camera.connected && camera.gimbalSleeping { wakeButton }
-            layout {
-                HStack(spacing: 6) {
-                    gimbalAimButton("console.gimbal.center", icon: "scope", recenter: true)
-                    gimbalAimButton("console.gimbal.flip", icon: "arrow.left.arrow.right", recenter: false)
+            if stacked {
+                VStack(alignment: .leading, spacing: 6) {
+                    aim
+                    menus
                 }
+            } else {
                 HStack(spacing: 6) {
-                    gimbalModeMenu
-                    gimbalMemoryButton("console.gimbal.savePosition", icon: "bookmark",
-                                       enabled: camera.canRememberGimbal, action: camera.saveGimbalPosition)
-                        .accessibilityIdentifier("console.gimbal.savePosition")
-                    gimbalMemoryButton("console.gimbal.restorePosition", icon: "arrow.uturn.backward",
-                                       enabled: camera.canRememberGimbal && camera.savedGimbalForCamera != nil,
-                                       action: camera.restoreGimbalPosition)
-                        .accessibilityIdentifier("console.gimbal.restorePosition")
+                    aim
+                    menus
                 }
             }
         }
     }
 
-    /// 云台模式小按钮，点开后在菜单里切换。
+    /// 云台位置二级菜单。记忆会先确认，避免直接覆盖已保存的角度。
+    private var gimbalPositionMenu: some View {
+        let enabled = camera.canRememberGimbal
+        return Menu {
+            Button {
+                // 等菜单收起再弹确认，否则本次点击会被菜单关闭吃掉。
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(250))
+                    confirmsGimbalSave = true
+                }
+            } label: {
+                Label("console.gimbal.remember", systemImage: "bookmark")
+            }
+            .accessibilityIdentifier("console.gimbal.savePosition")
+            Button(action: camera.restoreGimbalPosition) {
+                Label("console.gimbal.restore", systemImage: "location")
+            }
+            .disabled(camera.savedGimbalForCamera == nil)
+            .accessibilityIdentifier("console.gimbal.restorePosition")
+        } label: {
+            Label("console.gimbal.position", systemImage: "mappin.and.ellipse")
+                .labelStyle(.titleAndIcon)
+                .font(.caption.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .frame(maxWidth: .infinity, minHeight: Layout.gimbalButton)
+                .foregroundStyle(enabled ? Palette.accent : Palette.secondary)
+                .background(Palette.field, in: RoundedRectangle(cornerRadius: 9))
+                .contentShape(Rectangle())
+        }
+        .menuOrder(.fixed)
+        .disabled(!enabled)
+        .accessibilityIdentifier("console.gimbal.position")
+    }
+
+    /// 云台模式入口。按钮只写标题，当前模式在菜单里用勾表示。
     private var gimbalModeMenu: some View {
         var seen = Set<LunaGimbalMode>()
         let modes = camera.cameraProfile?.gimbalChoices
@@ -847,12 +966,15 @@ struct ConsoleView: View {
                 .accessibilityIdentifier("console.gimbal.mode.\(mode.rawValue)")
             }
         } label: {
-            Image(systemName: "gyroscope")
-                .font(.body.weight(.semibold))
-                .frame(width: Layout.buttonSize, height: Layout.buttonSize)
-                .foregroundStyle(enabled ? Palette.accent : Palette.secondary)
-                .background(Palette.field, in: RoundedRectangle(cornerRadius: 9))
-                .contentShape(Rectangle())
+            Label("console.gimbal.mode", systemImage: "gyroscope")
+                .labelStyle(.titleAndIcon)
+                .font(.caption.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .frame(maxWidth: .infinity, minHeight: Layout.gimbalButton)
+            .foregroundStyle(enabled ? Palette.accent : Palette.secondary)
+            .background(Palette.field, in: RoundedRectangle(cornerRadius: 9))
+            .contentShape(Rectangle())
         }
         .disabled(!enabled)
         .accessibilityLabel("console.gimbal.mode")
@@ -864,30 +986,14 @@ struct ConsoleView: View {
         Button { camera.aimGimbal(recenter: recenter) } label: {
             Label(title, systemImage: icon)
                 .labelStyle(.iconOnly)
-                .frame(width: Layout.buttonSize, height: Layout.buttonSize)
+                .font(.title3.weight(.semibold))
+                .frame(width: Layout.gimbalButton, height: Layout.gimbalButton)
                 .background(Palette.field, in: RoundedRectangle(cornerRadius: 9))
         }
         .buttonStyle(.plain)
         .disabled(!camera.canControl || camera.gimbalSleeping)
         .opacity(camera.canControl && !camera.gimbalSleeping ? 1 : 0.5)
         .accessibilityIdentifier(recenter ? "console.gimbal.center" : "console.gimbal.flip")
-    }
-
-    private func gimbalMemoryButton(_ title: LocalizedStringKey, icon: String,
-                                    enabled: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Label(title, systemImage: icon)
-                .font(.caption2.weight(.semibold))
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, 5)
-                .padding(.vertical, 4)
-                .frame(maxWidth: .infinity, minHeight: Layout.buttonSize)
-                .background(Palette.field, in: RoundedRectangle(cornerRadius: 9))
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(enabled ? Palette.accent : Palette.secondary)
-        .disabled(!enabled)
     }
 
     private var wakeButton: some View {
@@ -940,6 +1046,7 @@ struct PreviewSurface: UIViewRepresentable {
     func makeUIView(context: Context) -> Surface {
         let view = Surface()
         view.isUserInteractionEnabled = false
+        view.claim(layer)
         return view
     }
 
@@ -949,31 +1056,74 @@ struct PreviewSurface: UIViewRepresentable {
         view.preparePictureInPicture()
     }
 
+    static func dismantleUIView(_ view: Surface, coordinator: ()) {
+        view.retire()
+    }
+
+    /// 图传层的宿主视图。同一图层只归最新创建的宿主；退场中的旧宿主不能把它抢回去。
     final class Surface: UIView {
+        /// 每个图传层当前的宿主。
+        private static let owners = NSMapTable<AVSampleBufferDisplayLayer, Surface>.weakToWeakObjects()
         private weak var displayLayer: AVSampleBufferDisplayLayer?
         weak var pictureInPicture: ConsolePictureInPicture?
 
-        func attach(_ display: AVSampleBufferDisplayLayer) {
-            guard displayLayer !== display || display.superlayer !== layer else { return }
-            if displayLayer?.superlayer === layer { displayLayer?.removeFromSuperlayer() }
+        /// 新宿主直接接管图层。
+        func claim(_ display: AVSampleBufferDisplayLayer) {
+            Self.owners.setObject(self, forKey: display)
             displayLayer = display
-            display.videoGravity = .resizeAspect
-            layer.addSublayer(display)
+            mount()
+        }
+
+        /// 只在没人持有、或原宿主已离开窗口时接管，避免和新宿主互抢。
+        func attach(_ display: AVSampleBufferDisplayLayer) {
+            displayLayer = display
+            let owner = Self.owners.object(forKey: display)
+            guard owner === self || owner == nil || owner?.window == nil else { return }
+            Self.owners.setObject(self, forKey: display)
+            mount()
+        }
+
+        /// 宿主销毁时交出所有权，留下的宿主在下次布局时接回。
+        func retire() {
+            guard let displayLayer, Self.owners.object(forKey: displayLayer) === self else { return }
+            Self.owners.removeObject(forKey: displayLayer)
+        }
+
+        private func mount() {
+            guard let displayLayer else { return }
+            displayLayer.videoGravity = .resizeAspect
+            if displayLayer.superlayer !== layer {
+                layer.addSublayer(displayLayer)
+            }
             setNeedsLayout()
         }
 
         override func layoutSubviews() {
             super.layoutSubviews()
-            guard displayLayer?.superlayer === layer else { return }
-            CATransaction.begin()
-            CATransaction.setDisableActions(true)
-            displayLayer?.frame = bounds
-            CATransaction.commit()
+            if let displayLayer, displayLayer.superlayer !== layer, window != nil {
+                attach(displayLayer)
+            }
+            applyDisplayFrame()
+        }
+
+        /// 把图传层贴到当前视图尺寸，并去掉旋转事务附带的尺寸动画。
+        private func applyDisplayFrame() {
+            guard let displayLayer, displayLayer.superlayer === layer else { return }
+            guard bounds.width > 1, bounds.height > 1 else { return }
+            UIView.performWithoutAnimation {
+                CATransaction.begin()
+                CATransaction.setDisableActions(true)
+                displayLayer.removeAnimation(forKey: "bounds")
+                displayLayer.removeAnimation(forKey: "position")
+                displayLayer.frame = bounds
+                CATransaction.commit()
+            }
             preparePictureInPicture()
         }
 
         override func didMoveToWindow() {
             super.didMoveToWindow()
+            if window != nil, let displayLayer { attach(displayLayer) }
             preparePictureInPicture()
         }
 
@@ -996,20 +1146,21 @@ struct GimbalPad: View {
     var body: some View {
         GeometryReader { geometry in
             let radius = geometry.size.width / 2
+            let knob = geometry.size.width * 0.44
             ZStack {
                 Circle().fill(Palette.field).strokeBorder(Palette.border)
-                Image(systemName: "arrowtriangle.up.fill").offset(y: -radius * 0.75)
-                Image(systemName: "arrowtriangle.down.fill").offset(y: radius * 0.75)
-                Image(systemName: "arrowtriangle.left.fill").offset(x: -radius * 0.75)
-                Image(systemName: "arrowtriangle.right.fill").offset(x: radius * 0.75)
+                Image(systemName: "arrowtriangle.up.fill").offset(y: -radius * 0.72)
+                Image(systemName: "arrowtriangle.down.fill").offset(y: radius * 0.72)
+                Image(systemName: "arrowtriangle.left.fill").offset(x: -radius * 0.72)
+                Image(systemName: "arrowtriangle.right.fill").offset(x: radius * 0.72)
                 Circle()
                     .fill(tracking ? Palette.accent : Color(red: 0.24, green: 0.31, blue: 0.34))
-                    .frame(width: 37, height: 37)
+                    .frame(width: knob, height: knob)
                     .overlay { Circle().strokeBorder(.white.opacity(0.16)) }
                     .offset(offset)
                     .allowsHitTesting(false)
             }
-            .font(.system(size: 9, weight: .medium))
+            .font(.system(size: max(12, geometry.size.width * 0.1), weight: .medium))
             .foregroundStyle(Palette.secondary)
             .contentShape(Circle())
             .gesture(DragGesture(minimumDistance: 0)

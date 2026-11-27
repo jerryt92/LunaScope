@@ -79,6 +79,14 @@ struct CameraAlbumView: View {
                 content
                 if showsFloatingControls {
                     VStack(spacing: 10) {
+                        if model.deleting {
+                            Text("album.deleting.media")
+                                .font(.footnote.weight(.semibold))
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .glassEffect(.regular, in: .capsule)
+                                .accessibilityIdentifier("album.deleting.media")
+                        }
                         if let notice = model.notice { feedback(notice) }
                         if model.isSelecting || model.deleting { deleteButton }
                     }
@@ -99,7 +107,7 @@ struct CameraAlbumView: View {
             }
             .pickerStyle(.segmented)
             .frame(maxWidth: 174)
-            .disabled(model.deleting || model.loading || !model.opened || !model.sdAvailable)
+            .disabled(model.deleting || (model.loading && !model.hasSnapshot) || !model.opened || !model.sdAvailable)
             .accessibilityIdentifier("album.storage")
 
             Spacer(minLength: 0)
@@ -196,7 +204,7 @@ struct CameraAlbumView: View {
             Group {
                 if model.deleting {
                     ProgressView().tint(.white)
-                        .accessibilityLabel(Text("album.deleting \(String(model.deletedCount)) \(String(model.deleteTotal))"))
+                        .accessibilityLabel(Text("album.deleting.media"))
                 } else {
                     Image(systemName: "trash")
                         .font(verticalSizeClass == .compact ? .body.weight(.semibold) : .title2.weight(.semibold))

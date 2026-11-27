@@ -12,6 +12,10 @@ final class CameraAlbumModel {
     @ObservationIgnored private var deleteRequest = UUID()
     @ObservationIgnored private var connectionRevision = UUID()
     @ObservationIgnored private var failedStorage: CameraAlbumStorage?
+    /// 同名 DNG 不进网格，删除对应 JPG 时一起删掉。
+    @ObservationIgnored private var rawCompanions: [String: CameraAlbumItem] = [:]
+    /// 相册页是否正在显示。删除进行中离开页面时不中断，结束后再释放相机。
+    @ObservationIgnored private var browsing = false
 
     private(set) var cameraID: UUID?
     private(set) var storage: CameraAlbumStorage = .internalStorage
@@ -42,20 +46,29 @@ final class CameraAlbumModel {
     var isAllSelected: Bool { !selectableIdentifiers.isEmpty && selection == selectableIdentifiers }
 
     func updateContext(cameraID: UUID?, connected: Bool, active: Bool) {
+        browsing = active && cameraID != nil && connected
         if self.cameraID != cameraID {
             stop(cancelSelection: true)
             self.cameraID = cameraID
             snapshots.removeAll()
+            rawCompanions = [:]
             storage = .internalStorage
             sdAvailable = true
             notice = nil
             replaceSections([])
             storageRevision &+= 1
         }
-        guard cameraID != nil, active, connected else {
+        guard cameraID != nil, connected else {
             stop(cancelSelection: !active)
             return
         }
+        guard active else {
+            // 切到拍摄、设置等页面时，已开始的删除继续；只停掉列表刷新。
+            if deleting { pauseCatalog() }
+            else { stop(cancelSelection: true) }
+            return
+        }
+        guard !deleting else { return }
         retry()
     }
 
@@ -113,13 +126,21 @@ final class CameraAlbumModel {
                     destination = stores.available.contains(reported) ? reported : .internalStorage
                 }
             }
-            let items = try await service.list(destination)
+            var collected: [CameraAlbumItem] = []
+            try await service.list(destination) { page in
+                try self.checkCatalog(request)
+                collected.append(contentsOf: page)
+                try await self.publish(collected, storage: destination, request: request)
+            } onCatalog: { items in
+                try self.checkCatalog(request)
+                collected = items
+                try await self.publish(items, storage: destination, request: request)
+            }
             try checkCatalog(request)
-            let groups = await Task.detached(priority: .userInitiated) { CameraAlbumDaySection.group(items) }.value
-            try checkCatalog(request)
-            snapshots[destination] = groups
-            show(destination, sections: groups)
-            thumbnailRevision &+= 1
+            if snapshots[destination] == nil {
+                snapshots[destination] = []
+                show(destination, sections: [])
+            }
         } catch is CancellationError {
             return
         } catch {
@@ -128,6 +149,45 @@ final class CameraAlbumModel {
             AppLog.error(error, context: "album.catalog")
             notice = .init(text: "\(String(localized: "album.error.load")) · \(error.localizedDescription)", isError: true)
         }
+    }
+
+    /// 把当前已收到的文件分组并显示。全选状态下，新到的页继续保持全选。
+    private func publish(_ items: [CameraAlbumItem], storage: CameraAlbumStorage, request: UUID) async throws {
+        try checkCatalog(request)
+        let keepAll = isSelecting && isAllSelected
+        let visible = items.filter { $0.kind != .raw }
+        rawCompanions = Self.pairedRawFiles(in: items)
+        guard !visible.isEmpty else { return }
+        let groups = await Task.detached(priority: .userInitiated) {
+            CameraAlbumDaySection.group(visible)
+        }.value
+        try checkCatalog(request)
+        rawCompanions = Self.pairedRawFiles(in: items)
+        snapshots[storage] = groups
+        let switchingStorage = storage != self.storage
+        show(storage, sections: groups)
+        if keepAll, !switchingStorage { selection = selectableIdentifiers }
+    }
+
+    /// 网格只保留 JPG、实况和视频。RAW 按同目录同名挂到 JPG 上，供删除时一并移除。
+    private static func pairedRawFiles(in items: [CameraAlbumItem]) -> [String: CameraAlbumItem] {
+        var rawByStem: [String: CameraAlbumItem] = [:]
+        for item in items where item.kind == .raw {
+            rawByStem[mediaStem(item.uri)] = item
+        }
+        var companions: [String: CameraAlbumItem] = [:]
+        for item in items where item.kind == .photo || item.kind == .livePhoto {
+            if let raw = rawByStem[mediaStem(item.uri)] {
+                companions[item.id] = raw
+            }
+        }
+        return companions
+    }
+
+    /// 目录加去掉扩展名的文件名，用来配对 JPG 与 DNG。
+    private static func mediaStem(_ uri: String) -> String {
+        let path = uri as NSString
+        return path.deletingLastPathComponent + "/" + path.deletingPathExtension.lowercased()
     }
 
     private func checkCatalog(_ request: UUID) throws {
@@ -152,20 +212,30 @@ final class CameraAlbumModel {
         dataVersion &+= 1
     }
 
-    private func stop(cancelSelection: Bool) {
+    /// 停掉目录刷新，但保留删除任务和相册会话。
+    private func pauseCatalog() {
         catalogRequest = UUID()
         failedStorage = nil
         catalogTask?.cancel()
         catalogTask = nil
         loading = false
+    }
+
+    private func stop(cancelSelection: Bool) {
+        pauseCatalog()
         deleteRequest = UUID()
         deleteTask?.cancel()
         deleteTask = nil
         deleting = false
+        camera.setDeletingMedia(false)
+        releaseAlbum()
+        if cancelSelection { self.cancelSelection() }
+    }
+
+    private func releaseAlbum() {
         if opened { service.close() }
         opened = false
         connectionRevision = UUID()
-        if cancelSelection { self.cancelSelection() }
     }
 
     func thumbnail(_ item: CameraAlbumItem, cameraID: UUID?, storage: CameraAlbumStorage) async -> UIImage? {
@@ -253,6 +323,7 @@ final class CameraAlbumModel {
         deletedCount = 0
         deleteTotal = items.count
         notice = nil
+        camera.setDeletingMedia(true)
         deleteTask = Task { [weak self] in
             guard let self else { return }
             await self.deleteFiles(items, clearSelection: clearSelection, request: request)
@@ -265,6 +336,10 @@ final class CameraAlbumModel {
         for item in items {
             do {
                 try Task.checkCancellation()
+                if let raw = rawCompanions[item.id] {
+                    try await service.delete([raw])
+                    rawCompanions[item.id] = nil
+                }
                 try await service.delete([item])
                 try Task.checkCancellation()
                 guard request == deleteRequest else { return }
@@ -284,7 +359,10 @@ final class CameraAlbumModel {
         }
         deleteTask = nil
         deleting = false
+        camera.setDeletingMedia(false)
         if clearSelection { cancelSelection() }
+        // 删除开始后切走页面，完成后释放相机，避免拍摄页一直被相册占用。
+        if !browsing { releaseAlbum() }
         // 成功只反映在列表消失，不挂持久「已删除」提示；仅失败才提示。
         if failures > 0 {
             notice = .init(

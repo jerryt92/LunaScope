@@ -44,15 +44,15 @@ final class CameraConnectionLifetime: ObservableObject {
         let status: CameraConnectionActivity.Status
         if camera.connectionDropped { status = .disconnected }
         else if camera.reconnecting { status = .reconnecting }
-        // 录像 / 连拍优先于「后台」态。
+        // 录像 / 连拍优先。
         else if camera.connected, camera.recording { status = .recording }
         else if camera.connected, camera.continuousShooting { status = .continuous }
-        else if phase == .background, camera.connected, !camera.pictureInPicture.isActive { status = .background }
-        else if camera.verifyingConnection { status = .verifying }
+        // 已连通时保持 connected：后台/前台探活不再切到 background、verifying，避免「连接中/已连接」反复跳。
         else if camera.connected { status = .connected }
         else { status = .connecting }
         let keepFresh = phase == .active || capturing
-        return .init(status: status, canStart: keepFresh)
+        let interval = status == .continuous ? camera.continuousInterval.seconds : nil
+        return .init(status: status, intervalSeconds: interval, canStart: keepFresh)
     }
 
     func present(_ presentation: ConnectionActivityCoordinator.Presentation?) {

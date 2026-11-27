@@ -29,7 +29,12 @@ protocol CameraAlbumAccess: AnyObject {
     func open() throws
     func close()
     func storages() async throws -> (available: Set<CameraAlbumStorage>, active: CameraAlbumStorage?)
-    func list(_ storage: CameraAlbumStorage) async throws -> [CameraAlbumItem]
+    /// 按页回调文件。`onCatalog` 在拍摄信息返回后给出带大小和时长的完整清单。
+    func list(
+        _ storage: CameraAlbumStorage,
+        onPage: @escaping @MainActor ([CameraAlbumItem]) async throws -> Void,
+        onCatalog: @escaping @MainActor ([CameraAlbumItem]) async throws -> Void
+    ) async throws
     func cachedThumbnail(_ item: CameraAlbumItem, cameraID: UUID, storage: CameraAlbumStorage) -> UIImage?
     func thumbnail(_ item: CameraAlbumItem, cameraID: UUID, storage: CameraAlbumStorage) async -> UIImage?
     func preview(_ item: CameraAlbumItem, onBusy: (Bool) -> Void) async throws -> CameraAlbumPreviewMedia
@@ -42,6 +47,8 @@ final class CameraAlbumService: CameraAlbumAccess {
     private let camera: CameraController
     private let owner = UUID()
     private let downloader = CameraMediaDownload()
+    /// 单次文件名请求的条数。第一页返回后就可以显示网格。
+    static let fileListPageSize: UInt32 = 100
     private let thumbnailCache = NSCache<NSString, UIImage>()
     private lazy var encoder = MonitorMediaThumbnailEncoder()
     private var link: CameraController.AlbumLink?
@@ -49,6 +56,9 @@ final class CameraAlbumService: CameraAlbumAccess {
     private var lastCapture: (time: ContinuousClock.Instant, idle: Bool)?
     private var captureRequest: Task<Bool, Error>?
     private var thumbnailReads = 0
+    /// 相册命令的唯一发送口。列目录、缩略图、拍摄状态和删除都在这里排队。
+    private var commandLocked = false
+    private var commandWaiters: [CheckedContinuation<Void, Never>] = []
 
     init(camera: CameraController) {
         self.camera = camera
@@ -85,35 +95,66 @@ final class CameraAlbumService: CameraAlbumAccess {
         return (available, active)
     }
 
-    func list(_ storage: CameraAlbumStorage) async throws -> [CameraAlbumItem] {
+    func list(
+        _ storage: CameraAlbumStorage,
+        onPage: @escaping @MainActor ([CameraAlbumItem]) async throws -> Void,
+        onCatalog: @escaping @MainActor ([CameraAlbumItem]) async throws -> Void
+    ) async throws {
         let operation = lease
         let link = try currentLink()
         var offset: UInt32 = 0
-        var uris: [String] = []
         var seen: Set<String> = []
+        var ordered: [String] = []
+        let pageSize = Self.fileListPageSize
         while true {
+            try check(link, operation)
             let page = try await mediaControl(
-                LunaProtocol.fileListRequest(start: offset, location: storage.rawValue), link, operation,
-                decode: LunaProtocol.fileList(response:))
-            let previousCount = uris.count
-            uris.append(contentsOf: page.uris.filter { seen.insert($0).inserted })
-            if page.totalCount == 0 || UInt64(uris.count) >= page.totalCount { break }
-            let next = UInt64(offset) + UInt64(page.uris.count)
-            guard uris.count > previousCount, let offsetValue = UInt32(exactly: next) else {
-                throw CameraAlbumError.listing
+                LunaProtocol.fileListRequest(start: offset, count: pageSize, location: storage.rawValue),
+                link, operation, decode: LunaProtocol.fileList(response:))
+            var fresh: [String] = []
+            fresh.reserveCapacity(page.uris.count)
+            for uri in page.uris where seen.insert(uri).inserted { fresh.append(uri) }
+            ordered.append(contentsOf: fresh)
+            var cursor = 0
+            while cursor < fresh.count {
+                let end = min(cursor + Int(pageSize), fresh.count)
+                let items = Self.albumItems(Array(fresh[cursor..<end]), metadata: [:], seen: seen)
+                if !items.isEmpty { try await onPage(items) }
+                cursor = end
             }
+            // 短页或总数已齐就结束。没有新文件说明相机重复返回了同一页。
+            if page.uris.isEmpty || fresh.isEmpty { break }
+            if page.totalCount > 0, UInt64(seen.count) >= page.totalCount { break }
+            if page.uris.count < Int(pageSize) { break }
+            let next = UInt64(offset) + UInt64(page.uris.count)
+            guard let offsetValue = UInt32(exactly: next) else { throw CameraAlbumError.listing }
             offset = offsetValue
         }
-        var files = uris.map { LunaMediaFile(uri: $0) }
-        if let metadata = try? await mediaControl(
-            LunaProtocol.fileInfoListRequest(location: storage.rawValue), link, operation,
-            decode: LunaProtocol.fileInfoList(response:)) {
-            let byURI = Dictionary(metadata.map { ($0.uri, $0) }, uniquingKeysWith: { a, _ in a })
-            files = files.map { byURI[$0.uri] ?? $0 }
+        do {
+            let metadata = try await mediaControl(
+                LunaProtocol.fileInfoListRequest(location: storage.rawValue), link, operation,
+                decode: LunaProtocol.fileInfoList(response:))
+            let byURI = Dictionary(metadata.map { ($0.uri, $0) }, uniquingKeysWith: { current, _ in current })
+            let items = Self.albumItems(ordered, metadata: byURI, seen: seen)
+            if !items.isEmpty { try await onCatalog(items) }
+        } catch is CancellationError {
+            throw CancellationError()
+        } catch {
+            // 元数据失败时网格已经按文件名日期显示。
+            AppLog.error(error, context: "album.fileInfo")
         }
         try check(link, operation)
-        return files.filter { !$0.isProxy }.map { file in
-            CameraAlbumItem(file: file, proxyURI: file.proxyURI.flatMap { seen.contains($0) ? $0 : nil })
+    }
+
+    /// 去掉代理文件。拍摄信息里有的字段覆盖文件名解析结果。
+    private static func albumItems(
+        _ uris: [String], metadata: [String: LunaMediaFile], seen: Set<String>
+    ) -> [CameraAlbumItem] {
+        uris.compactMap { uri in
+            let listed = metadata[uri] ?? LunaMediaFile(uri: uri)
+            guard !listed.isProxy else { return nil }
+            let proxy = listed.proxyURI.flatMap { seen.contains($0) ? $0 : nil }
+            return CameraAlbumItem(file: listed, proxyURI: proxy)
         }
     }
 
@@ -216,13 +257,13 @@ final class CameraAlbumService: CameraAlbumAccess {
         }
     }
 
+    /// 删除和列目录、缩略图一样走 mediaControl，不能直接占控制链路。
     func delete(_ items: [CameraAlbumItem]) async throws {
         let operation = lease
         let link = try currentLink()
         for item in items {
-            try await waitUntilIdle(link, operation)
-            _ = try await control(try LunaProtocol.deleteFiles(item.uri), link, operation)
-            try check(link, operation)
+            _ = try await mediaControl(
+                try LunaProtocol.deleteFiles(item.uri), link, operation, decode: { $0 })
         }
     }
 
@@ -257,11 +298,32 @@ final class CameraAlbumService: CameraAlbumAccess {
         }
     }
 
+    /// 同一时刻只允许一条相册命令在链路上。
     private func control(_ request: LunaRequest, _ link: CameraController.AlbumLink, _ operation: UUID) async throws -> Data {
+        try check(link, operation)
+        await acquireCommand()
+        defer { releaseCommand() }
         try check(link, operation)
         let response = try await link.session.control(request, timeout: .seconds(8))
         try check(link, operation)
         return response
+    }
+
+    private func acquireCommand() async {
+        if !commandLocked {
+            commandLocked = true
+            return
+        }
+        await withCheckedContinuation { commandWaiters.append($0) }
+    }
+
+    private func releaseCommand() {
+        guard let next = commandWaiters.first else {
+            commandLocked = false
+            return
+        }
+        commandWaiters.removeFirst()
+        next.resume()
     }
 
     private func mediaControl<Output>(

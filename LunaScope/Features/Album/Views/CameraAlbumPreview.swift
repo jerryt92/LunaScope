@@ -188,6 +188,12 @@ struct CameraAlbumPreview: View {
                     .frame(maxWidth: 560)
                     .frame(maxWidth: .infinity)
             }
+            if showsDeleteFeedback, model.deleting {
+                Text("album.deleting.media").font(.footnote.weight(.semibold))
+                    .padding(10)
+                    .glassEffect(.regular, in: .capsule)
+                    .accessibilityIdentifier("album.deleting.media")
+            }
             if showsDeleteFeedback, let notice = model.notice, notice.isError {
                 Text(notice.text).font(.footnote)
                     .padding(10)

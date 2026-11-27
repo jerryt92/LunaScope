@@ -1,24 +1,20 @@
 /* LunaScope Localizable — Simplified Chinese */
 
-"activity.camera.background" = "已在后台保持连接";
-
 "activity.camera.connected" = "相机已连接";
 
-"activity.camera.connecting" = "正在连接相机…";
+"activity.camera.connecting" = "相机连接中";
 
 "activity.camera.continuous" = "连续拍摄进行中";
+
+"activity.camera.continuousInterval %@" = "连续拍摄 · 每 %@";
+
+"activity.camera.continuousInterval %@" = "连续拍摄 · 每 %@";
 
 "activity.camera.disconnected" = "相机连接已断开";
 
 "activity.camera.recording" = "正在录像…";
 
-"activity.camera.reconnecting" = "正在重新连接相机…";
-
-"activity.camera.stale" = "打开 LunaScope 确认连接";
-
 "activity.camera.title" = "LunaScope";
-
-"activity.camera.verifying" = "正在确认相机连接…";
 
 "album.badge.live" = "实况照片";
 
@@ -40,7 +36,7 @@
 
 "album.deletePartial %@ %@" = "已删除 %1$@ 项，%2$@ 项失败";
 
-"album.deleting %@ %@" = "正在删除 %1$@/%2$@";
+"album.deleting.media" = "正在删除媒体";
 
 "album.deselectAll" = "取消全选";
 
@@ -93,8 +89,6 @@
 "common.done" = "完成";
 
 "common.retry" = "重试";
-
-"connection.background.detail" = "切到后台时会尽量保持连接，并用实时活动显示状态。录像或连拍进行中会优先续约后台时间；返回时会再确认连接。";
 
 "connection.devices.title" = "附近的相机";
 
@@ -227,7 +221,19 @@
 
 "console.gimbal.mode" = "云台模式";
 
-"console.gimbal.restorePosition" = "恢复上次位置";
+"console.gimbal.position" = "云台位置";
+
+"console.gimbal.remember" = "记忆";
+
+"console.gimbal.restore" = "定位到记忆点";
+
+"console.gimbal.restorePosition" = "定位到记忆点";
+
+"console.gimbal.saveConfirm" = "记忆";
+
+"console.gimbal.saveConfirmMessage" = "将记下当前角度，并覆盖这台相机上次记忆的位置。";
+
+"console.gimbal.saveConfirmTitle" = "记忆云台位置？";
 
 "console.gimbal.right" = "向右";
 
@@ -295,8 +301,6 @@
 
 "console.mode.videoFamily" = "视频模式";
 
-"console.notice.acknowledged" = "快门指令已确认，可在相机相册查看照片。";
-
 "console.notice.continuousStopped" = "连续拍摄已停止。";
 
 "console.notice.disconnected %@" = "相机连接已断开。%1$@";
@@ -307,9 +311,9 @@
 
 "console.notice.gimbalLimit" = "云台已达到限位。";
 
-"console.notice.gimbalFlipMismatch" = "云台翻转方向与记忆不一致，请先自行翻转后再恢复。";
+"console.notice.gimbalFlipMismatch" = "云台翻转方向与记忆不一致，请先自行翻转后再定位。";
 
-"console.notice.gimbalRestored" = "已恢复云台位置。";
+"console.notice.gimbalRestored" = "已定位到记忆点。";
 
 "console.notice.gimbalRestoredAnglesOnly" = "已恢复云台位置。此记录没有翻转状态。";
 
@@ -330,10 +334,6 @@
 "console.notice.reconnecting %@" = "连接中断，正在重连…%1$@";
 
 "console.notice.reconnectingGeneric" = "正在重新连接相机…";
-
-"console.notice.saved" = "照片已保存到相机。";
-
-"console.notice.shutter" = "相机已响应快门，正在等待拍摄结果。";
 
 "console.notice.simulator" = "请在 iPhone 或 iPad 真机上搜索并配对 Luna 相机。";
 

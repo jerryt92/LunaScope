@@ -136,8 +136,8 @@ final class ConsoleNavigationTests: XCTestCase {
         XCTAssertFalse(exposure.isEnabled)
         XCTAssertLessThan(exposure.frame.midY, preview.frame.midY)
         XCTAssertFalse(app.buttons["console.settings.focus"].exists)
-        for identifier in ["console.gimbal.center", "console.gimbal.flip", "console.gimbal.savePosition",
-                           "console.gimbal.restorePosition", "console.gimbal.mode.menu"] {
+        for identifier in ["console.gimbal.center", "console.gimbal.flip", "console.gimbal.position",
+                           "console.gimbal.mode.menu"] {
             let control = app.buttons[identifier]
             XCTAssertTrue(control.exists, identifier)
             XCTAssertFalse(control.isEnabled, identifier)
@@ -182,7 +182,7 @@ final class ConsoleNavigationTests: XCTestCase {
         XCTAssertTrue(sidebar.buttons["console.capture.shutter"].exists)
         for _ in 0..<3 where !mode.isHittable { sidebar.swipeUp() }
         XCTAssertTrue(sidebar.buttons["console.mode.menu"].exists)
-        XCTAssertGreaterThan(mode.frame.midY, shutter.frame.midY)
+        XCTAssertLessThan(mode.frame.midY, shutter.frame.midY)
         sidebar.swipeUp()
         XCTAssertEqual(expand.frame, previewButtonFrame)
         expand.tap()

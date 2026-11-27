@@ -69,14 +69,11 @@ struct ConsoleShootInterval: Equatable, Codable, Hashable {
     }
 }
 
-/// 连续拍摄调度：下一张只能在上一张完成后触发，并至少间隔指定秒数。
+/// 连续拍摄调度：按固定间隔触发，不按曝光时长提前或补齐。
 enum ConsoleContinuousCapture {
-    /// 计算完成上一张后还需等待多久再开拍。长曝光超过间隔时返回 0。
-    static func delayBeforeNextShot(interval: TimeInterval, started: Date, completed: Date,
-                                    now: Date = Date()) -> TimeInterval {
-        guard interval.isFinite, interval > 0, completed >= started else { return 0 }
-        let earliest = started.addingTimeInterval(interval)
-        let readyAt = max(completed, earliest)
-        return max(0, readyAt.timeIntervalSince(now))
+    /// 本次触发之后的下一次触发时刻。
+    static func nextTrigger(firedAt: Date, interval: TimeInterval) -> Date {
+        let spacing = interval.isFinite && interval > 0 ? interval : 0
+        return firedAt.addingTimeInterval(spacing)
     }
 }

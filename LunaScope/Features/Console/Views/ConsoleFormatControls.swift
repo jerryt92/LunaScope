@@ -339,8 +339,8 @@ private struct PhotoSizeSheet: View {
 struct ConsoleMenuLabel: View {
     static let spacing: CGFloat = 5
     static let minHeight: CGFloat = 32
-    /// 单行排布时每个配置项的最小宽度，用于计算能放下几项。
-    static let minItemWidth: CGFloat = 84
+    /// 每个配置项的最小宽度。放不下就换行，避免把标题挤到不可读。
+    static let minItemWidth: CGFloat = 132
     let title: LocalizedStringKey
     let value: String?
     var isMenu = true

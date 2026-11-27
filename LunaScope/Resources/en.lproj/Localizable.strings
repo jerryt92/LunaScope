@@ -1,24 +1,20 @@
 /* LunaScope Localizable — English */
 
-"activity.camera.background" = "Connected in background";
-
 "activity.camera.connected" = "Camera connected";
 
-"activity.camera.connecting" = "Connecting to camera…";
+"activity.camera.connecting" = "Connecting to camera";
 
 "activity.camera.continuous" = "Continuous capture in progress";
+
+"activity.camera.continuousInterval %@" = "Continuous · every %@";
+
+"activity.camera.continuousInterval %@" = "Continuous · every %@";
 
 "activity.camera.disconnected" = "Camera disconnected";
 
 "activity.camera.recording" = "Recording…";
 
-"activity.camera.reconnecting" = "Reconnecting to camera…";
-
-"activity.camera.stale" = "Open LunaScope to confirm the connection";
-
 "activity.camera.title" = "LunaScope";
-
-"activity.camera.verifying" = "Checking camera connection…";
 
 "album.badge.live" = "Live Photo";
 
@@ -40,7 +36,7 @@
 
 "album.deletePartial %@ %@" = "Deleted %1$@, %2$@ failed";
 
-"album.deleting %@ %@" = "Deleting %1$@ of %2$@";
+"album.deleting.media" = "Deleting media";
 
 "album.deselectAll" = "Deselect all";
 
@@ -93,8 +89,6 @@
 "common.done" = "Done";
 
 "common.retry" = "Retry";
-
-"connection.background.detail" = "LunaScope keeps the connection when possible and shows status in a Live Activity. Recording and continuous capture renew background time; the app rechecks the link when you return.";
 
 "connection.devices.title" = "Nearby cameras";
 
@@ -227,7 +221,19 @@
 
 "console.gimbal.mode" = "Gimbal mode";
 
-"console.gimbal.restorePosition" = "Restore position";
+"console.gimbal.position" = "Gimbal position";
+
+"console.gimbal.remember" = "Save";
+
+"console.gimbal.restore" = "Locate saved point";
+
+"console.gimbal.restorePosition" = "Locate saved point";
+
+"console.gimbal.saveConfirm" = "Save";
+
+"console.gimbal.saveConfirmMessage" = "This replaces the position saved for this camera.";
+
+"console.gimbal.saveConfirmTitle" = "Save gimbal position?";
 
 "console.gimbal.right" = "Right";
 
@@ -295,8 +301,6 @@
 
 "console.mode.videoFamily" = "Video modes";
 
-"console.notice.acknowledged" = "The camera acknowledged the shutter. Check its album for the photo.";
-
 "console.notice.continuousStopped" = "Continuous capture stopped.";
 
 "console.notice.disconnected %@" = "The camera disconnected. %1$@";
@@ -307,9 +311,9 @@
 
 "console.notice.gimbalLimit" = "Gimbal has reached its limit.";
 
-"console.notice.gimbalFlipMismatch" = "Gimbal flip does not match the saved position. Flip it yourself, then restore again.";
+"console.notice.gimbalFlipMismatch" = "Gimbal flip does not match the saved position. Flip it yourself, then locate again.";
 
-"console.notice.gimbalRestored" = "Gimbal position restored.";
+"console.notice.gimbalRestored" = "Moved to the saved gimbal position.";
 
 "console.notice.gimbalRestoredAnglesOnly" = "Gimbal position restored. The saved position has no flip state.";
 
@@ -330,10 +334,6 @@
 "console.notice.reconnecting %@" = "Connection lost. Reconnecting… %1$@";
 
 "console.notice.reconnectingGeneric" = "Reconnecting to the camera…";
-
-"console.notice.saved" = "The photo is saved to the camera.";
-
-"console.notice.shutter" = "The camera acknowledged the shutter and is processing the photo.";
 
 "console.notice.simulator" = "Find and pair a Luna camera on a physical iPhone or iPad.";
 

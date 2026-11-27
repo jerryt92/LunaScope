@@ -1,3 +1,4 @@
+import Foundation
 import LunaTransportProtocol
 import OpenCineCore
 
@@ -33,6 +34,30 @@ struct ConsoleZoom: Equatable {
 
     func allows(_ factor: Double) -> Bool {
         (stops.contains(factor) || fineRange?.contains(factor) == true) && domain.contains(.zoom(factor))
+    }
+
+    /// 固定档多于一个，或可以连续变焦时，才显示控件。
+    var offersChoice: Bool { fineRange != nil || stops.count > 1 }
+
+    /// 连续范围内的对数位置：0 为下限，1 为上限，每加倍程占同样路程。
+    func unitPosition(of factor: Double) -> Double? {
+        guard let fineRange, factor > 0 else { return nil }
+        let lower = log2(fineRange.lowerBound)
+        let upper = log2(fineRange.upperBound)
+        guard upper > lower else { return nil }
+        let clamped = min(max(factor, fineRange.lowerBound), fineRange.upperBound)
+        return min(1, max(0, (log2(clamped) - lower) / (upper - lower)))
+    }
+
+    /// 把 0...1 的对数位置还原成连续范围内的量化倍数。
+    func factor(atUnitPosition position: Double) -> Double? {
+        guard let fineRange else { return nil }
+        let lower = log2(fineRange.lowerBound)
+        let upper = log2(fineRange.upperBound)
+        guard upper > lower else { return nil }
+        let unit = min(1, max(0, position))
+        let quantized = Self.quantize(pow(2, lower + (upper - lower) * unit))
+        return min(fineRange.upperBound, max(fineRange.lowerBound, quantized))
     }
 
     static func quantize(_ factor: Double) -> Double { (factor * 40).rounded() / 40 }

@@ -6,6 +6,8 @@ import Foundation
 final class ConnectionActivityCoordinator {
     struct Presentation: Equatable {
         let status: CameraConnectionActivity.Status
+        /// 连续拍摄间隔（秒），其它状态为空。
+        let intervalSeconds: Double?
         let canStart: Bool
     }
 
@@ -45,8 +47,10 @@ final class ConnectionActivityCoordinator {
             return
         }
         guard requested != lastPresented else { return }
-        let state = CameraConnectionActivity.ContentState(status: requested.status)
-        let content = ActivityContent(state: state, staleDate: requested.canStart ? nil : .now.addingTimeInterval(30))
+        let state = CameraConnectionActivity.ContentState(
+            status: requested.status, intervalSeconds: requested.intervalSeconds)
+        // 不设过期时间，避免系统把活动标成需要打开 App 确认。
+        let content = ActivityContent(state: state, staleDate: nil)
         if let activity {
             if activity.activityState == .active || activity.activityState == .stale {
                 await activity.update(content)
