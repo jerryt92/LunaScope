@@ -893,15 +893,33 @@ final class CameraController {
         }
     }
 
+    /// 拍照各段等待的上限。先等满这次曝光，再留 65 秒给写卡和命令回读。自动快门没有选定值，按当前模式最长的一档算。
+    private func photoCaptureTimeout() -> Duration {
+        let selected = parameters?.exposure?.shutter
+        let exposure: Double
+        if let selected, selected.isFinite, selected > 0 {
+            exposure = selected
+        } else if let mode = shootingMode {
+            let choices = cameraProfile?.shutterChoices(mode: mode, format: parameters?.format, firmware: firmware) ?? []
+            exposure = choices.max() ?? 0
+        } else {
+            exposure = 0
+        }
+        return .seconds(exposure + 65)
+    }
+
     /// 拍一张并等到完成。进度只反映在快门转圈上，不再弹出拍摄结果提示。
     private func captureStill(through target: LunaCameraSession) async throws {
         let photoMode = shootingMode ?? .photo
         try await applyMode(photoMode, through: target)
         try await ensureSelectedParameters(in: photoMode, through: target)
         try validate(target)
-        // 上一张仍在写卡时等它结束，不把这次快门当成失败。
+        let timeout = photoCaptureTimeout()
+        let clock = ContinuousClock()
+        // 上一张仍在曝光或写卡时等它结束，不把这次快门当成失败。
         if capture?.isSettledIdle != true {
-            for _ in 0..<180 where capture?.isSettledIdle != true {
+            let deadline = clock.now.advanced(by: timeout)
+            while capture?.isSettledIdle != true, clock.now < deadline {
                 try await Task.sleep(for: .milliseconds(250))
                 try validate(target)
             }
@@ -917,14 +935,19 @@ final class CameraController {
             }
         }
         let request = try LunaProtocol.takePicture(mode: photoMode == .pano ? .gimbalPano : .normal)
-        _ = try await target.control(request, timeout: .seconds(65))
+        _ = try await target.control(request, timeout: timeout)
         try validate(target)
-        for poll in 0..<180 {
-            if photoCompletion != nil || (poll >= 12 && capture?.isSettledIdle == true) { break }
+        let deadline = clock.now.advanced(by: timeout)
+        let idleAfter = clock.now.advanced(by: .seconds(3))
+        var sawCapture = false
+        while clock.now < deadline {
+            if capture?.isSettledIdle == false { sawCapture = true }
+            if photoCompletion == true || (clock.now >= idleAfter && capture?.isSettledIdle == true) { break }
             try await Task.sleep(for: .milliseconds(250))
             try validate(target)
         }
-        if photoCompletion == false { throw ControlError.captureFailed }
+        // 8201 的非零码在长曝光结束时也会出现，但片子已经写上。只有相机根本没开拍才算失败。
+        if photoCompletion == false, !sawCapture { throw ControlError.captureFailed }
     }
 
     func toggleRecording() {
@@ -2114,9 +2137,11 @@ final class CameraController {
                 updateScreenConnection(state)
             }
         case .captureStopped(let errorCode, let uri):
-            if pendingPhoto != nil {
-                if errorCode != 0 { photoCompletion = false }
-                else if let uri, !uri.isEmpty { photoCompletion = true }
+            guard pendingPhoto != nil else { break }
+            if let uri, !uri.isEmpty {
+                photoCompletion = true
+            } else if errorCode != 0 {
+                photoCompletion = false
             }
         default:
             break

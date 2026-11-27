@@ -442,6 +442,14 @@ public enum LunaNotification: Equatable, Sendable {
         try self.init(code: message.code, body: message.body)
     }
 
+    /// 8201 的路径有时是纯字符串，有时再包一层。解析失败不能把整条通知丢掉。
+    private static func captureFileURI(_ data: Data?) -> String? {
+        guard let data, !data.isEmpty else { return nil }
+        let nested = (try? ProtoMessage(data).optionalBytes(1)) ?? data
+        guard let text = String(data: nested, encoding: .utf8), text.contains("/") else { return nil }
+        return text
+    }
+
     public init(code: UInt16, body: Data) throws {
         let m = try ProtoMessage(body)
         func u(_ n: Int) throws -> UInt64 { try m.unsigned(n, default: 0) }
@@ -450,8 +458,7 @@ public enum LunaNotification: Equatable, Sendable {
         case 8196: self = .batteryLow(try LunaBattery(m.optionalBytes(1) ?? Data()))
         case 8198: self = .storage(cardState: try u(1), location: try u(2), kind: try u(3))
         case 8201:
-            let uri = try m.optionalBytes(2).flatMap { try ProtoMessage($0).optionalBytes(1) }
-            self = .captureStopped(errorCode: try u(1), uri: uri.flatMap { String(data: $0, encoding: .utf8) })
+            self = .captureStopped(errorCode: try u(1), uri: Self.captureFileURI(try m.optionalBytes(2)))
         case 8208: self = .captureStatus(try LunaCaptureStatus(notification: body))
         case 8234:
             self = .liveStream(LunaLiveStreamParameters(
