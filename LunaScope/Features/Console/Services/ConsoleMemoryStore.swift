@@ -18,19 +18,23 @@ struct ConsoleMemory: Codable, Equatable {
     var continuousPhoto = false
     /// 上次使用的连续拍摄间隔；关闭连拍后仍保留，便于下次恢复。
     var continuousInterval: ConsoleShootInterval?
+    /// 连续拍摄开始时是否自动回到开拍角度。和手动记忆的位置不是同一条记录，旧存档视为打开。
+    var continuousGimbalReturn = true
 
     init(
         lastPosition: ConsoleGimbalPosition? = nil, presets: [Preset] = [],
-        continuousPhoto: Bool = false, continuousInterval: ConsoleShootInterval? = nil
+        continuousPhoto: Bool = false, continuousInterval: ConsoleShootInterval? = nil,
+        continuousGimbalReturn: Bool = true
     ) {
         self.lastPosition = lastPosition
         self.presets = presets
         self.continuousPhoto = continuousPhoto
         self.continuousInterval = continuousInterval
+        self.continuousGimbalReturn = continuousGimbalReturn
     }
 
     private enum CodingKeys: String, CodingKey {
-        case lastPosition, presets, continuousPhoto, continuousInterval
+        case lastPosition, presets, continuousPhoto, continuousInterval, continuousGimbalReturn
     }
 
     init(from decoder: Decoder) throws {
@@ -39,6 +43,7 @@ struct ConsoleMemory: Codable, Equatable {
         presets = try container.decodeIfPresent([Preset].self, forKey: .presets) ?? []
         continuousPhoto = try container.decodeIfPresent(Bool.self, forKey: .continuousPhoto) ?? false
         continuousInterval = try container.decodeIfPresent(ConsoleShootInterval.self, forKey: .continuousInterval)
+        continuousGimbalReturn = try container.decodeIfPresent(Bool.self, forKey: .continuousGimbalReturn) ?? true
     }
 
     func encode(to encoder: Encoder) throws {
@@ -47,6 +52,7 @@ struct ConsoleMemory: Codable, Equatable {
         try container.encode(presets, forKey: .presets)
         try container.encode(continuousPhoto, forKey: .continuousPhoto)
         try container.encodeIfPresent(continuousInterval, forKey: .continuousInterval)
+        try container.encode(continuousGimbalReturn, forKey: .continuousGimbalReturn)
     }
 }
 

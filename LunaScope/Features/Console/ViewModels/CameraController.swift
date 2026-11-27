@@ -179,7 +179,7 @@ final class CameraController {
     @ObservationIgnored private var lastCaptureReportAt = Date.distantPast
     @ObservationIgnored private var pendingPhoto: UUID?
     @ObservationIgnored private var photoCompletion: Bool?
-    /// perform 正在执行拍照或连拍。写卡结束后由拍摄状态继续带动快门转圈。
+    /// 单张拍照的命令还在执行。连拍的间隔等待不靠它转圈。
     @ObservationIgnored private var shutterCommand = false
     /// 上一张还在处理时又按下的快门次数，当前命令结束后继续拍。
     @ObservationIgnored private var queuedShutterPresses = 0
@@ -189,6 +189,10 @@ final class CameraController {
     private(set) var continuousPhoto = false
     private(set) var continuousShooting = false
     var continuousInterval = ConsoleShootInterval()
+    /// 连续拍摄时每张之前先回到开拍角度。默认打开，只记开关，不记角度。
+    private(set) var continuousGimbalReturn = true
+    /// 这次连拍按下时的云台角度。只活在这一轮里，不写入手动记忆的位置。
+    @ObservationIgnored private var continuousReturnPosition: ConsoleGimbalPosition?
     @ObservationIgnored private var continuousGeneration = UUID()
     @ObservationIgnored private var gimbalNudge: Task<Void, Never>?
     @ObservationIgnored private var reconnectTask: Task<Void, Never>?
@@ -220,6 +224,7 @@ final class CameraController {
         if let interval = loaded.continuousInterval {
             continuousInterval = interval
         }
+        continuousGimbalReturn = loaded.continuousGimbalReturn
         let profiles = ConsoleCameraProfile.bundled
         let advertisedModels = profiles.flatMap { profile in
             profile.bluetoothPrefixes.map { ($0, profile.deviceModels[0]) }
@@ -321,8 +326,9 @@ final class CameraController {
         if busy || showsParameterWorkingIndicator || processingCapture { return .processing }
         return nil
     }
-    /// 拍照或连拍期间，以及照片仍在写卡时，快门按钮自己转圈。
+    /// 快门转圈只表示这张照片正在拍。连拍的间隔等待、以及拍完后的写卡状态，都不再转。
     var showsShutterActivity: Bool {
+        if continuousShooting { return pendingPhoto != nil }
         if shutterCommand || pendingPhoto != nil { return true }
         guard shootingMode == .photo || shootingMode == .pano else { return false }
         guard !recording, snapshot?.recording.value != .transitioning else { return false }
@@ -817,6 +823,19 @@ final class CameraController {
         rememberContinuousPreference()
     }
 
+    /// 打开或关闭连续拍摄时的自动归位。只改开关，不动手动记忆的角度。
+    func setContinuousGimbalReturn(_ enabled: Bool) {
+        guard continuousGimbalReturn != enabled else { return }
+        continuousGimbalReturn = enabled
+        if !enabled { continuousReturnPosition = nil }
+        rememberContinuousPreference()
+        guard enabled, continuousShooting, continuousReturnPosition == nil else { return }
+        let generation = continuousGeneration
+        Task { @MainActor [weak self] in
+            await self?.rememberContinuousReturnPosition(generation: generation)
+        }
+    }
+
     func toggleContinuousCapture() {
         if continuousShooting {
             stopContinuousCapture()
@@ -828,14 +847,22 @@ final class CameraController {
     func stopContinuousCapture() {
         continuousGeneration = UUID()
         continuousShooting = false
+        continuousReturnPosition = nil
     }
 
-    /// 开始按间隔拍照。能拍就触发，然后固定等待间隔；单张失败不结束，只有彻底断联才停。
+    /// 拍照按钮可以按：没有在转圈，也没有被禁用。连拍间隔从这一刻起算。
+    private var continuousShutterReady: Bool {
+        canTakePhoto && !showsShutterActivity
+    }
+
+    /// 开始按间隔拍照。第一张在按钮可用时立刻拍，之后每次都等按钮可用再计满间隔。单张失败不结束，只有彻底断联才停。
     private func startContinuousCapture() {
         guard !continuousShooting, continuousPhoto, shootingMode == .photo else { return }
         let generation = UUID()
         continuousGeneration = generation
         continuousShooting = true
+        continuousReturnPosition = nil
+        releaseGimbal()
         Task { @MainActor [weak self] in
             guard let self else { return }
             // 本段连拍再挂一份后台任务，与 Lifetime 的音频保活叠加，降低刷新时序空窗。
@@ -845,32 +872,102 @@ final class CameraController {
                 localBackground.end()
                 if self.continuousGeneration == generation {
                     self.continuousShooting = false
+                    self.continuousReturnPosition = nil
                 }
             }
+            if self.continuousGimbalReturn {
+                await self.rememberContinuousReturnPosition(generation: generation)
+            }
+            var afterShot = false
             while self.continuousGeneration == generation, self.continuousShooting {
                 if self.continuousLinkLost { break }
                 while self.continuousGeneration == generation, self.continuousShooting,
-                      !self.continuousLinkLost, !self.canTakePhoto {
+                      !self.continuousLinkLost, !self.continuousShutterReady {
                     try? await Task.sleep(for: .milliseconds(200))
                 }
                 guard self.continuousGeneration == generation, self.continuousShooting,
                       !self.continuousLinkLost else { break }
-                let firedAt = Date()
-                self.perform(String(localized: "console.error.photo"), presentation: .shutter, reportsError: false) { target in
-                    try await self.captureStill(through: target)
-                }
-                let next = ConsoleContinuousCapture.nextTrigger(
-                    firedAt: firedAt, interval: self.continuousInterval.seconds)
-                while Date() < next {
-                    if self.continuousGeneration != generation || !self.continuousShooting || self.continuousLinkLost {
-                        break
+                if afterShot {
+                    let readyAt = Date()
+                    let next = ConsoleContinuousCapture.nextTrigger(
+                        firedAt: readyAt, interval: self.continuousInterval.seconds)
+                    var stayedReady = true
+                    while Date() < next {
+                        if self.continuousGeneration != generation || !self.continuousShooting || self.continuousLinkLost {
+                            stayedReady = false
+                            break
+                        }
+                        // 按钮中途又不可用时，这段作废，等它再次可用后重新计满间隔。
+                        if !self.continuousShutterReady {
+                            stayedReady = false
+                            break
+                        }
+                        let slice = min(0.25, next.timeIntervalSinceNow)
+                        if slice <= 0 { break }
+                        try? await Task.sleep(for: .seconds(slice))
                     }
-                    let slice = min(0.25, next.timeIntervalSinceNow)
-                    if slice <= 0 { break }
-                    try? await Task.sleep(for: .seconds(slice))
+                    guard stayedReady, self.continuousGeneration == generation, self.continuousShooting,
+                          !self.continuousLinkLost else { continue }
                 }
+                await self.fireContinuousStill()
+                afterShot = true
             }
         }
+    }
+
+    /// 记下按下连拍时的云台角度。写到单独的字段，不覆盖手动记忆。
+    private func rememberContinuousReturnPosition(generation: UUID) async {
+        guard continuousGeneration == generation, continuousGimbalReturn, supportsGimbal,
+              let cameraID = selectedCamera?.id, let target = session else { return }
+        do {
+            let angles = try await gimbalCommands(through: target).readPosition(cameraID: cameraID)
+            guard continuousGeneration == generation, continuousGimbalReturn,
+                  let position = ConsoleGimbalPosition(cameraID: cameraID, yaw: angles.yaw, pitch: angles.pitch,
+                                                       isFlipped: gimbalIsFlipped) else { return }
+            continuousReturnPosition = position
+        } catch {
+            AppLog.error(error, context: "console.continuous.gimbal")
+        }
+    }
+
+    /// 先等归位结束，再拍这一张。归位失败就跳过这一张，避免转到一半就曝光。
+    private func fireContinuousStill() async {
+        guard canControl, let target = session else { return }
+        releaseGimbal()
+        busy = true
+        defer {
+            if session === target {
+                busy = false
+                shutterCommand = false
+                if queuedShutterPresses > 0 {
+                    queuedShutterPresses -= 1
+                    takePhoto()
+                }
+                if !busy { startSettingWrites() }
+            }
+        }
+        do {
+            if continuousGimbalReturn, let position = continuousReturnPosition {
+                try await returnContinuousGimbal(position, through: target)
+            }
+            try await captureStill(through: target)
+        } catch is CancellationError {
+            return
+        } catch {
+            guard session === target else { return }
+            AppLog.error(error, context: "console.continuous")
+        }
+    }
+
+    /// 转到这一轮连拍记下的角度，并等到转动结束。不弹手动定位的提示。
+    private func returnContinuousGimbal(
+        _ position: ConsoleGimbalPosition, through target: LunaCameraSession
+    ) async throws {
+        try await stopSubjectTracking(through: target)
+        var commands = gimbalCommands(through: target)
+        commands.atAxisLimit = { self.gimbalWasAtLimit }
+        _ = try await commands.restore(position, currentFlip: gimbalIsFlipped, travelLimit: .seconds(60))
+        if gimbalSleeping { try? await wakeGimbalSequence(target) }
     }
 
     /// 重连耗尽或用户断开才算彻底断联；重连过程中连拍继续等。
@@ -1029,7 +1126,8 @@ final class CameraController {
     func moveGimbal(pan: Double, tilt: Double) {
         gimbalNudge?.cancel()
         gimbalNudge = nil
-        guard supportsGimbal, canControl, !gimbalSleeping, pan != 0 || tilt != 0 else {
+        // 连续拍摄期间拨杆不能再带动云台。
+        guard supportsGimbal, canControl, !gimbalSleeping, !continuousShooting, pan != 0 || tilt != 0 else {
             releaseGimbal()
             return
         }
@@ -1059,7 +1157,7 @@ final class CameraController {
     }
 
     func aimGimbal(recenter: Bool) {
-        guard supportsGimbal, canControl, !gimbalSleeping else { return }
+        guard supportsGimbal, canControl, !gimbalSleeping, !continuousShooting else { return }
         perform(recenter ? String(localized: "console.error.recenter") : String(localized: "console.error.flip")) { target in
             let request = try recenter ? LunaProtocol.gimbalRecenterRequest() : LunaProtocol.gimbalFlipRequest()
             _ = try await target.control(request)
@@ -1795,7 +1893,7 @@ final class CameraController {
 
     /// 转到这台相机记忆的角度。点击时先停掉正在进行的主体追踪，避免追踪把云台拉离记忆点。
     func restoreGimbalPosition() {
-        guard canRememberGimbal, let saved = savedGimbalForCamera,
+        guard !continuousShooting, canRememberGimbal, let saved = savedGimbalForCamera,
               let position = ConsoleGimbalPosition(cameraID: saved.cameraID, yaw: saved.yaw, pitch: saved.pitch,
                                                    isFlipped: saved.isFlipped) else { return }
         perform(String(localized: "console.error.gimbalRestore")) { target in
@@ -1941,6 +2039,7 @@ final class CameraController {
         var next = memory
         next.continuousPhoto = continuousPhoto
         next.continuousInterval = continuousInterval
+        next.continuousGimbalReturn = continuousGimbalReturn
         guard next != memory else { return }
         do {
             try memoryStore.save(next)

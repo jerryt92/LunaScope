@@ -22,16 +22,20 @@ struct ConsoleZoomControls: View {
             let inset = pitch / 2
             let span = max(1, width - pitch)
             let thumbX = zoom.map { inset + span * scale.position(of: $0) }
+            let trackY: CGFloat = 44
+            let thumbSize: CGFloat = 22
+            // 数字中心落在上沿和滑块顶边的正中，上下间距相同。
+            let valueY = (trackY - thumbSize / 2) / 2
             ZStack(alignment: .topLeading) {
                 Capsule()
                     .fill(Palette.secondary.opacity(0.28))
                     .frame(width: span, height: 6)
-                    .position(x: width / 2, y: 38)
+                    .position(x: width / 2, y: trackY)
                 if let thumbX {
                     Capsule()
                         .fill(Palette.accent)
                         .frame(width: max(6, thumbX - inset), height: 6)
-                        .position(x: inset + max(6, thumbX - inset) / 2, y: 38)
+                        .position(x: inset + max(6, thumbX - inset) / 2, y: trackY)
                 }
                 ForEach(scale.stops, id: \.self) { factor in
                     let x = inset + span * scale.position(of: factor)
@@ -42,21 +46,21 @@ struct ConsoleZoomControls: View {
                             Circle().strokeBorder(selected ? Palette.accent : Palette.secondary, lineWidth: 2.5)
                         }
                         .frame(width: 16, height: 16)
-                        .position(x: x, y: 38)
+                        .position(x: x, y: trackY)
                     Text(stopLabel(factor))
                         .font(.caption.weight(.semibold).monospacedDigit())
                         .foregroundStyle(selected ? Palette.accent : Palette.secondary)
                         .lineLimit(1)
                         .frame(width: pitch)
-                        .position(x: x, y: 60)
+                        .position(x: x, y: 66)
                 }
                 // 滑块在预设点上和在中间倍数上一样大，盖在预设圆点上面。
                 if let thumbX {
                     Circle()
                         .fill(Palette.accent)
                         .overlay { Circle().strokeBorder(Color.white, lineWidth: 2) }
-                        .frame(width: 22, height: 22)
-                        .position(x: thumbX, y: 38)
+                        .frame(width: thumbSize, height: thumbSize)
+                        .position(x: thumbX, y: trackY)
                 }
                 if let zoom, let thumbX {
                     Text(valueLabel(zoom))
@@ -65,7 +69,7 @@ struct ConsoleZoomControls: View {
                         .padding(.horizontal, 8)
                         .padding(.vertical, 3)
                         .background(Palette.accent, in: Capsule())
-                        .position(x: min(max(34, thumbX), max(34, width - 34)), y: 16)
+                        .position(x: min(max(34, thumbX), max(34, width - 34)), y: valueY)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -89,6 +93,8 @@ struct ConsoleZoomControls: View {
         .frame(height: Self.barHeight)
         .padding(.horizontal, 4)
         .background(Palette.field, in: RoundedRectangle(cornerRadius: 12))
+        // 先合成再变淡。半透明的圆叠在轨道上时，重合处更深，剩下的一圈就像月亮。
+        .compositingGroup()
         .opacity(enabled ? 1 : 0.6)
         .transaction { $0.animation = nil }
         .task(id: gestureActive) {

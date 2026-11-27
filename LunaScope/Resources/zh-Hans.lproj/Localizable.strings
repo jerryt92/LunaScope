@@ -221,6 +221,8 @@
 
 "console.gimbal.mode" = "云台模式";
 
+"console.gimbal.continuousReturn" = "连续拍摄时云台自动归位";
+
 "console.gimbal.position" = "云台位置";
 
 "console.gimbal.remember" = "记忆";

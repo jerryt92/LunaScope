@@ -37,8 +37,11 @@ struct ConsoleGimbalCommands {
     /// 追踪刚停时云台可能还在动，先等到停稳再转角，否则相机会拒绝。
     /// - Parameter currentFlip: 本会话确认过的朝向；nil 表示还没按过回中或翻转，不参与比对。
     /// - Returns: 到位、翻转不一致，或在限位停下。
+    /// - Parameter travelLimit: 转到目标的最长等待。幅度大时调用方可以放宽，避免转到一半就超时。
     @discardableResult
-    func restore(_ position: ConsoleGimbalPosition, currentFlip: Bool?) async throws -> ConsoleGimbalRestoreResult {
+    func restore(
+        _ position: ConsoleGimbalPosition, currentFlip: Bool?, travelLimit: Duration = .seconds(10)
+    ) async throws -> ConsoleGimbalRestoreResult {
         // 没在本会话确认朝向时不比，避免重连后的空记录误报。一旦确认翻转，记忆里没写翻转也视为正向。
         if let currentFlip, (position.isFlipped ?? false) != currentFlip {
             return .flipMismatch
@@ -52,7 +55,7 @@ struct ConsoleGimbalCommands {
         guard !reply.isEmpty else { throw ControlError.cameraRefused }
         let reached: Bool
         do {
-            reached = try await waitForTravel(to: position, from: start)
+            reached = try await waitForTravel(to: position, from: start, limit: travelLimit)
         } catch {
             await finishMove(reached: false)
             throw error
@@ -87,14 +90,16 @@ struct ConsoleGimbalCommands {
 
     /// 等云台转到记忆角度。限位标志一亮，或转到一半停住不再前进，都立刻结束，不空等超时。
     /// - Returns: `true` 已到位；`false` 没到位就在限位停下。
-    private func waitForTravel(to position: ConsoleGimbalPosition, from start: LunaGimbalAngle) async throws -> Bool {
+    private func waitForTravel(
+        to position: ConsoleGimbalPosition, from start: LunaGimbalAngle, limit: Duration
+    ) async throws -> Bool {
         let clock = ContinuousClock()
         let began = clock.now
         var last = start
         var limited = atAxisLimit()
         var moved = false
         var stillReads = 0
-        while clock.now - began < .seconds(10) {
+        while clock.now - began < limit {
             try await Task.sleep(for: .milliseconds(100))
             let angle = try await readAngle()
             if position.matchesAngles(angle) { return true }

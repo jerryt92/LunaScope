@@ -221,6 +221,8 @@
 
 "console.gimbal.mode" = "Gimbal mode";
 
+"console.gimbal.continuousReturn" = "Auto-return gimbal while shooting";
+
 "console.gimbal.position" = "Gimbal position";
 
 "console.gimbal.remember" = "Save";

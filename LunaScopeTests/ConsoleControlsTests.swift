@@ -232,14 +232,20 @@ final class ConsoleControlsTests: XCTestCase {
         let loaded = try store.load()
         XCTAssertFalse(loaded.continuousPhoto)
         XCTAssertNil(loaded.continuousInterval)
+        XCTAssertTrue(loaded.continuousGimbalReturn)
 
         var saved = loaded
         saved.continuousPhoto = true
         saved.continuousInterval = ConsoleShootInterval(selection: .preset(30))
+        saved.continuousGimbalReturn = false
+        let remembered = ConsoleGimbalPosition(cameraID: UUID(), yaw: 12, pitch: -3, isFlipped: false)
+        saved.lastPosition = remembered
         try store.save(saved)
         let restored = try store.load()
         XCTAssertTrue(restored.continuousPhoto)
         XCTAssertEqual(restored.continuousInterval?.seconds, 30)
+        XCTAssertFalse(restored.continuousGimbalReturn)
+        XCTAssertEqual(restored.lastPosition, remembered)
     }
 
     @MainActor

@@ -589,10 +589,11 @@ struct ConsoleView: View {
     }
 
     private var joystick: some View {
-        GimbalPad(move: camera.moveGimbal, release: camera.releaseGimbal, nudge: camera.nudgeGimbal)
+        let enabled = camera.canControl && !camera.gimbalSleeping && !camera.continuousShooting
+        return GimbalPad(move: camera.moveGimbal, release: camera.releaseGimbal, nudge: camera.nudgeGimbal)
             .frame(width: Layout.joystick, height: Layout.joystick)
-            .disabled(!camera.canControl || camera.gimbalSleeping)
-            .opacity(camera.canControl && !camera.gimbalSleeping ? 1 : 0.5)
+            .disabled(!enabled)
+            .opacity(enabled ? 1 : 0.5)
             .accessibilityIdentifier("console.gimbal.pad")
     }
 
@@ -866,8 +867,11 @@ struct ConsoleView: View {
     private var gimbalPositionMenu: some View {
         GimbalPositionMenu(
             enabled: camera.canRememberGimbal,
-            canRestore: camera.savedGimbalForCamera != nil,
+            canRestore: camera.savedGimbalForCamera != nil && !camera.continuousShooting,
+            showsContinuousReturn: camera.continuousPhoto,
+            continuousReturn: camera.continuousGimbalReturn,
             buttonHeight: Layout.gimbalButton,
+            setContinuousReturn: camera.setContinuousGimbalReturn,
             remember: {
                 // 等菜单收起再弹确认，否则本次点击会被菜单关闭吃掉。
                 Task { @MainActor in
@@ -900,8 +904,8 @@ struct ConsoleView: View {
                 .background(Palette.field, in: RoundedRectangle(cornerRadius: 9))
         }
         .buttonStyle(.plain)
-        .disabled(!camera.canControl || camera.gimbalSleeping)
-        .opacity(camera.canControl && !camera.gimbalSleeping ? 1 : 0.5)
+        .disabled(!camera.canControl || camera.gimbalSleeping || camera.continuousShooting)
+        .opacity(camera.canControl && !camera.gimbalSleeping && !camera.continuousShooting ? 1 : 0.5)
         .accessibilityIdentifier(recenter ? "console.gimbal.center" : "console.gimbal.flip")
     }
 
@@ -1066,16 +1070,21 @@ private struct GimbalModeMenu: View, Equatable {
     }
 }
 
-/// 云台位置菜单。记忆和恢复两项固定，不跟着拍摄页重绘。
+/// 云台位置菜单。记忆、恢复，以及连续拍摄时的自动归位开关。
 private struct GimbalPositionMenu: View, Equatable {
     let enabled: Bool
     let canRestore: Bool
+    let showsContinuousReturn: Bool
+    let continuousReturn: Bool
     let buttonHeight: CGFloat
+    let setContinuousReturn: (Bool) -> Void
     let remember: () -> Void
     let restore: () -> Void
 
     static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.enabled == rhs.enabled && lhs.canRestore == rhs.canRestore && lhs.buttonHeight == rhs.buttonHeight
+        lhs.enabled == rhs.enabled && lhs.canRestore == rhs.canRestore
+            && lhs.showsContinuousReturn == rhs.showsContinuousReturn
+            && lhs.continuousReturn == rhs.continuousReturn && lhs.buttonHeight == rhs.buttonHeight
     }
 
     var body: some View {
@@ -1089,6 +1098,12 @@ private struct GimbalPositionMenu: View, Equatable {
             }
             .disabled(!canRestore)
             .accessibilityIdentifier("console.gimbal.restorePosition")
+            if showsContinuousReturn {
+                Toggle(isOn: Binding(get: { continuousReturn }, set: setContinuousReturn)) {
+                    Label("console.gimbal.continuousReturn", systemImage: "scope")
+                }
+                .accessibilityIdentifier("console.gimbal.continuousReturn")
+            }
         } label: {
             Label("console.gimbal.position", systemImage: "mappin.and.ellipse")
                 .labelStyle(.titleAndIcon)

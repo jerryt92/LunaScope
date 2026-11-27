@@ -69,9 +69,9 @@ struct ConsoleShootInterval: Equatable, Codable, Hashable {
     }
 }
 
-/// 连续拍摄调度：按固定间隔触发，不按曝光时长提前或补齐。
+/// 连续拍摄调度。间隔从拍照按钮变为可用时起算，不从按下快门起算。
 enum ConsoleContinuousCapture {
-    /// 本次触发之后的下一次触发时刻。
+    /// 按钮可用时刻之后的下一次拍摄时刻。
     static func nextTrigger(firedAt: Date, interval: TimeInterval) -> Date {
         let spacing = interval.isFinite && interval > 0 ? interval : 0
         return firedAt.addingTimeInterval(spacing)
