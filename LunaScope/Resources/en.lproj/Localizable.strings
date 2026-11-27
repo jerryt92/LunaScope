@@ -512,7 +512,7 @@
 
 "permissions.localNetwork.title" = "Local Network";
 
-"permissions.localNetwork.waiting" = "Waiting for the system";
+"permissions.localNetwork.waiting" = "Checking";
 
 "permissions.location.detail" = "Reads the current Wi-Fi name to confirm this iPhone or iPad has joined the camera network. Your location is not recorded.";
 

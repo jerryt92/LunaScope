@@ -16,7 +16,7 @@ struct PermissionCheckView: View {
     @StateObject private var bluetooth = BluetoothPermissionStatus()
     @StateObject private var location = LocationPermissionStatus()
     @StateObject private var localNetwork = LocalNetworkPermissionStatus()
-    private let cellularData = CTCellularData()
+    @State private var cellularData = CTCellularData()
 
     var body: some View {
         List {
@@ -24,13 +24,14 @@ struct PermissionCheckView: View {
                 bluetoothText, bluetoothAction, requestBluetooth, statusColor: bluetoothStatusColor)
                 .accessibilityIdentifier("permissions.bluetooth")
             row("permissions.localNetwork.title", "permissions.localNetwork.detail", "network",
-                localNetworkText, localNetworkAction, requestLocalNetwork, statusColor: localNetworkStatusColor)
+                localNetworkText, localNetworkAction, requestLocalNetwork, statusColor: localNetworkStatusColor,
+                busy: localNetwork.isChecking)
                 .accessibilityIdentifier("permissions.localNetwork")
             row("permissions.location.title", "permissions.location.detail", "location",
                 locationText, locationAction, requestLocation, statusColor: locationStatusColor)
                 .accessibilityIdentifier("permissions.location")
             row("permissions.photos.title", "permissions.photos.detail", "photo.on.rectangle.angled",
-                photoText, photoAction, requestPhoto, statusColor: photoStatusColor)
+                photoText, photoAction, requestPhoto, statusColor: photoStatusColor, busy: loading)
                 .accessibilityIdentifier("permissions.photos")
             if !ProcessInfo.processInfo.isiOSAppOnMac {
                 row("permissions.wirelessData.title", "permissions.wirelessData.detail", "wifi",
@@ -40,14 +41,20 @@ struct PermissionCheckView: View {
         }
         .navigationTitle("permissions.check.title")
         .navigationBarTitleDisplayMode(.inline)
-        .task { await refresh() }
+        .task {
+            // 无线数据的受限状态由系统异步给出，创建后立刻读取通常还是未知。
+            cellularData.cellularDataRestrictionDidUpdateNotifier = { state in
+                Task { @MainActor in cellular = state }
+            }
+            refresh()
+        }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { Task { await refresh() } }
+            if phase == .active { refresh() }
         }
         .onDisappear { localNetwork.stop() }
     }
 
-    /// 一行权限：说明、当前状态，以及允许或打开系统设置。
+    /// 一行权限：说明、当前状态，以及允许或打开系统设置。`busy` 只影响这一行。
     private func row(
         _ title: LocalizedStringKey,
         _ detail: LocalizedStringKey,
@@ -55,7 +62,8 @@ struct PermissionCheckView: View {
         _ status: LocalizedStringKey,
         _ action: LocalizedStringKey?,
         _ handler: @escaping () -> Void,
-        statusColor: Color
+        statusColor: Color,
+        busy: Bool = false
     ) -> some View {
         VStack(alignment: .leading, spacing: 7) {
             Label(title, systemImage: icon)
@@ -71,9 +79,9 @@ struct PermissionCheckView: View {
                 if let action {
                     Button(action, action: handler)
                         .buttonStyle(.borderless)
-                        .disabled(loading)
+                        .disabled(busy)
                 }
-                if loading { ProgressView().controlSize(.small) }
+                if busy { ProgressView().controlSize(.small) }
             }
         }
         .padding(.vertical, 3)
@@ -111,8 +119,8 @@ struct PermissionCheckView: View {
         switch localNetwork.state {
         case .allowed: "permissions.status.allowed"
         case .denied: "permissions.status.denied"
-        case .requested: "permissions.localNetwork.waiting"
-        case .unknown: "permissions.status.unchecked"
+        case .unknown, .requested:
+            localNetwork.isChecking ? "permissions.localNetwork.waiting" : "permissions.status.unchecked"
         }
     }
 
@@ -120,13 +128,13 @@ struct PermissionCheckView: View {
         switch localNetwork.state {
         case .allowed: nil
         case .denied: "permissions.action.settings"
-        case .unknown, .requested: localNetwork.isProbing ? nil : "permissions.action.allow"
+        case .unknown, .requested: localNetwork.isChecking ? nil : "permissions.action.allow"
         }
     }
 
     private var localNetworkStatusColor: Color { localNetwork.state == .denied ? .red : .secondary }
 
-    /// 本地网络没有现成的授权查询，点按后用本 App 的 Bonjour 服务唤起系统询问。
+    /// 本地网络没有现成的授权查询，点按后用本 App 的 Bonjour 服务唤起系统询问并核实结果。
     private func requestLocalNetwork() {
         if localNetwork.state == .denied { openSettings() }
         else { localNetwork.request() }
@@ -196,15 +204,15 @@ struct PermissionCheckView: View {
         switch cellular {
         case .restricted: "permissions.status.restricted"
         case .notRestricted: "permissions.status.allowed"
-        default: "permissions.status.unchecked"
+        default: "permissions.status.unknown"
         }
     }
 
     private var cellularAction: LocalizedStringKey? { cellular == .restricted ? "permissions.action.settings" : nil }
     private var cellularStatusColor: Color { cellular == .restricted ? .red : .secondary }
 
-    /// 回到前台或页面出现时重读各项状态。本地网络只能反映已经做过的检查。
-    private func refresh() async {
+    /// 页面出现或回到前台时重读各项状态。系统询问过本地网络后，这里会重新核实一次。
+    private func refresh() {
         bluetooth.refresh()
         location.refresh()
         localNetwork.refresh()
@@ -262,62 +270,82 @@ private final class LocationPermissionStatus: NSObject, ObservableObject, CLLoca
     }
 }
 
-/// 用本 App 已声明的 Bonjour 服务触发本地网络询问，并记住这次检查的结果。
+/// 本地网络没有系统查询接口：发布并浏览本 App 声明的 Bonjour 服务，发布成功或浏览到结果即已允许，系统明确拒绝即已拒绝。
 @MainActor
 private final class LocalNetworkPermissionStatus: NSObject, ObservableObject, NetServiceBrowserDelegate, NetServiceDelegate {
-    @Published private(set) var state: CameraNetworkPermissionState = .unknown
-    @Published private(set) var isProbing = false
+    private static let serviceType = "_lunascope._tcp"
+
+    /// 初值取上次核实的结论，再次进入页面时不会退回「尚未检查」。
+    @Published private(set) var state = LocalNetworkPermissionRecord.state ?? .unknown
+    @Published private(set) var isChecking = false
     private var privacy: LocalNetworkPrivacy?
-    /// 系统只在设置了 delegate 的 Bonjour 浏览上弹出本地网络询问。
     private var browser: NetServiceBrowser?
     private var publisher: NetService?
+    private var timeout: Task<Void, Never>?
 
+    /// 系统询问过才重新核实，避免一进页面就弹窗。从系统设置改完回来也走这里。
     func refresh() {
-        guard let privacy else { return }
-        state = privacy.state
-        isProbing = privacy.isProbing || browser != nil
+        guard LocalNetworkPermissionRecord.state != nil else { return }
+        check()
     }
 
+    /// 用户点「允许」：触发系统询问并等待结论。
     func request() {
-        if privacy == nil {
-            privacy = LocalNetworkPrivacy { [weak self] state, _ in
-                self?.state = state
-                self?.isProbing = (self?.privacy?.isProbing ?? false) || self?.browser != nil
-            }
-        }
-        privacy?.requestBeforeCameraJoin(serviceType: "_lunascope._tcp")
-        triggerSystemPrompt()
-        refresh()
+        LocalNetworkPermissionRecord.noteRequested()
+        check()
     }
 
-    /// 浏览并发布 Info.plist 里声明的服务。没有 delegate 时这次浏览不会唤起系统询问。
-    private func triggerSystemPrompt() {
-        browser?.stop()
-        publisher?.stop()
+    private func check() {
+        stop()
+        isChecking = true
+        let privacy = LocalNetworkPrivacy { [weak self] state, _ in self?.adopt(state) }
+        self.privacy = privacy
+        privacy.start(.init(browseType: Self.serviceType, includePeerToPeer: false, resultsGrant: true))
 
         let browser = NetServiceBrowser()
         browser.delegate = self
+        browser.searchForServices(ofType: Self.serviceType + ".", inDomain: "local.")
         self.browser = browser
-        browser.searchForServices(ofType: "_lunascope._tcp.", inDomain: "local.")
 
-        let service = NetService(domain: "local.", type: "_lunascope._tcp.", name: "LunaScope", port: 1100)
+        let service = NetService(domain: "local.", type: Self.serviceType + ".", name: "LunaScope", port: 1100)
         service.delegate = self
-        publisher = service
         service.publish()
+        publisher = service
+
+        // 用户一直不回答系统询问时结束这次检查，让「允许」按钮重新出现。
+        timeout = Task { [weak self] in
+            do { try await Task.sleep(for: .seconds(20)) } catch { return }
+            self?.stop()
+        }
+    }
+
+    /// 只接受明确结论，并记下来供下次进入页面使用。
+    private func adopt(_ next: CameraNetworkPermissionState) {
+        guard next == .allowed || next == .denied else { return }
+        state = next
+        LocalNetworkPermissionRecord.state = next
+        stop()
     }
 
     func stop() {
+        timeout?.cancel()
+        timeout = nil
         privacy?.stop()
+        privacy = nil
         browser?.stop()
         browser = nil
         publisher?.stop()
         publisher = nil
-        isProbing = privacy?.isProbing ?? false
+        isChecking = false
     }
 
-    nonisolated func netServiceBrowserWillSearch(_ browser: NetServiceBrowser) {}
-
-    nonisolated func netServiceDidPublish(_ sender: NetService) {}
+    /// 被拒绝时系统不会让服务发布成功，所以发布成功即已允许。回调在主线程的 run loop 上。
+    nonisolated func netServiceDidPublish(_ sender: NetService) {
+        MainActor.assumeIsolated {
+            guard sender === publisher else { return }
+            adopt(.allowed)
+        }
+    }
 }
 
 #Preview { NavigationStack { PermissionCheckView() } }

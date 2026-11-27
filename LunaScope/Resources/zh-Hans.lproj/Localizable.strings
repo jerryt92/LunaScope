@@ -512,7 +512,7 @@
 
 "permissions.localNetwork.title" = "本地网络";
 
-"permissions.localNetwork.waiting" = "等待系统确认";
+"permissions.localNetwork.waiting" = "正在检查";
 
 "permissions.location.detail" = "用于读取当前 Wi-Fi 名称，确认手机已经加入相机网络。不会记录你的位置。";
 

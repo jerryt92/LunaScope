@@ -203,6 +203,8 @@ final class CameraController {
     @ObservationIgnored private lazy var motion = LunaMotionService(session: { [weak self] in self?.session })
     @ObservationIgnored private lazy var privacy = LocalNetworkPrivacy { [weak self] state, _ in
         self?.localNetwork = state
+        // 连接过程中得到的结论同步给权限检查页。
+        if state == .allowed || state == .denied { LocalNetworkPermissionRecord.state = state }
     }
 
     init(memoryStore: ConsoleMemoryStore? = nil) {
@@ -388,6 +390,7 @@ final class CameraController {
         #if targetEnvironment(simulator)
         showNotice(String(localized: "console.notice.simulator"))
         #else
+        LocalNetworkPermissionRecord.noteRequested()
         privacy.requestBeforeCameraJoin(serviceType: "_lunascope._tcp")
         phase = .scanning
         let token = attempt
@@ -415,6 +418,7 @@ final class CameraController {
 
     func connect(_ camera: MonitorCamera) {
         disconnect()
+        LocalNetworkPermissionRecord.noteRequested()
         privacy.requestBeforeCameraJoin(serviceType: "_lunascope._tcp")
         selectedCamera = camera
         phase = .connecting
