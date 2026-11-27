@@ -518,15 +518,9 @@
 
 "permissions.location.title" = "位置";
 
-"permissions.networkAccess.footer" = "若系统限制了本 App 的无线数据，连接相机网络也可能失败。";
-
-"permissions.networkAccess.title" = "网络访问";
-
 "permissions.photos.detail" = "用于把你从相机勾选的照片和视频保存到系统照片 App 的 LunaScope 相册。";
 
 "permissions.photos.title" = "照片";
-
-"permissions.section.title" = "连接与保存";
 
 "permissions.status.allowed" = "已允许";
 

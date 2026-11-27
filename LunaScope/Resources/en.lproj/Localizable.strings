@@ -518,15 +518,9 @@
 
 "permissions.location.title" = "Location";
 
-"permissions.networkAccess.footer" = "If wireless data is restricted for this app, joining the camera network can also fail.";
-
-"permissions.networkAccess.title" = "Network Access";
-
 "permissions.photos.detail" = "Saves the photos and videos you select from the camera into the LunaScope album in Photos.";
 
 "permissions.photos.title" = "Photos";
-
-"permissions.section.title" = "Connection and Saving";
 
 "permissions.status.allowed" = "Allowed";
 

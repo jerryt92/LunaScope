@@ -20,30 +20,22 @@ struct PermissionCheckView: View {
 
     var body: some View {
         List {
-            Section("permissions.section.title") {
-                row("permissions.bluetooth.title", "permissions.bluetooth.detail", "dot.radiowaves.left.and.right",
-                    bluetoothText, bluetoothAction, requestBluetooth, statusColor: bluetoothStatusColor)
-                    .accessibilityIdentifier("permissions.bluetooth")
-                row("permissions.localNetwork.title", "permissions.localNetwork.detail", "network",
-                    localNetworkText, localNetworkAction, requestLocalNetwork, statusColor: localNetworkStatusColor)
-                    .accessibilityIdentifier("permissions.localNetwork")
-                row("permissions.location.title", "permissions.location.detail", "location",
-                    locationText, locationAction, requestLocation, statusColor: locationStatusColor)
-                    .accessibilityIdentifier("permissions.location")
-                row("permissions.photos.title", "permissions.photos.detail", "photo.on.rectangle.angled",
-                    photoText, photoAction, requestPhoto, statusColor: photoStatusColor)
-                    .accessibilityIdentifier("permissions.photos")
-            }
+            row("permissions.bluetooth.title", "permissions.bluetooth.detail", "dot.radiowaves.left.and.right",
+                bluetoothText, bluetoothAction, requestBluetooth, statusColor: bluetoothStatusColor)
+                .accessibilityIdentifier("permissions.bluetooth")
+            row("permissions.localNetwork.title", "permissions.localNetwork.detail", "network",
+                localNetworkText, localNetworkAction, requestLocalNetwork, statusColor: localNetworkStatusColor)
+                .accessibilityIdentifier("permissions.localNetwork")
+            row("permissions.location.title", "permissions.location.detail", "location",
+                locationText, locationAction, requestLocation, statusColor: locationStatusColor)
+                .accessibilityIdentifier("permissions.location")
+            row("permissions.photos.title", "permissions.photos.detail", "photo.on.rectangle.angled",
+                photoText, photoAction, requestPhoto, statusColor: photoStatusColor)
+                .accessibilityIdentifier("permissions.photos")
             if !ProcessInfo.processInfo.isiOSAppOnMac {
-                Section {
-                    row("permissions.wirelessData.title", "permissions.wirelessData.detail", "wifi",
-                        cellularText, cellularAction, openSettings, statusColor: cellularStatusColor)
-                        .accessibilityIdentifier("permissions.wirelessData")
-                } header: {
-                    Text("permissions.networkAccess.title")
-                } footer: {
-                    Text("permissions.networkAccess.footer")
-                }
+                row("permissions.wirelessData.title", "permissions.wirelessData.detail", "wifi",
+                    cellularText, cellularAction, openSettings, statusColor: cellularStatusColor)
+                    .accessibilityIdentifier("permissions.wirelessData")
             }
         }
         .navigationTitle("permissions.check.title")
@@ -78,6 +70,7 @@ struct PermissionCheckView: View {
                 Spacer()
                 if let action {
                     Button(action, action: handler)
+                        .buttonStyle(.borderless)
                         .disabled(loading)
                 }
                 if loading { ProgressView().controlSize(.small) }
@@ -271,29 +264,60 @@ private final class LocationPermissionStatus: NSObject, ObservableObject, CLLoca
 
 /// 用本 App 已声明的 Bonjour 服务触发本地网络询问，并记住这次检查的结果。
 @MainActor
-private final class LocalNetworkPermissionStatus: ObservableObject {
+private final class LocalNetworkPermissionStatus: NSObject, ObservableObject, NetServiceBrowserDelegate, NetServiceDelegate {
     @Published private(set) var state: CameraNetworkPermissionState = .unknown
     @Published private(set) var isProbing = false
     private var privacy: LocalNetworkPrivacy?
+    /// 系统只在设置了 delegate 的 Bonjour 浏览上弹出本地网络询问。
+    private var browser: NetServiceBrowser?
+    private var publisher: NetService?
 
     func refresh() {
         guard let privacy else { return }
         state = privacy.state
-        isProbing = privacy.isProbing
+        isProbing = privacy.isProbing || browser != nil
     }
 
     func request() {
         if privacy == nil {
             privacy = LocalNetworkPrivacy { [weak self] state, _ in
                 self?.state = state
-                self?.isProbing = self?.privacy?.isProbing ?? false
+                self?.isProbing = (self?.privacy?.isProbing ?? false) || self?.browser != nil
             }
         }
         privacy?.requestBeforeCameraJoin(serviceType: "_lunascope._tcp")
+        triggerSystemPrompt()
         refresh()
     }
 
-    func stop() { privacy?.stop() }
+    /// 浏览并发布 Info.plist 里声明的服务。没有 delegate 时这次浏览不会唤起系统询问。
+    private func triggerSystemPrompt() {
+        browser?.stop()
+        publisher?.stop()
+
+        let browser = NetServiceBrowser()
+        browser.delegate = self
+        self.browser = browser
+        browser.searchForServices(ofType: "_lunascope._tcp.", inDomain: "local.")
+
+        let service = NetService(domain: "local.", type: "_lunascope._tcp.", name: "LunaScope", port: 1100)
+        service.delegate = self
+        publisher = service
+        service.publish()
+    }
+
+    func stop() {
+        privacy?.stop()
+        browser?.stop()
+        browser = nil
+        publisher?.stop()
+        publisher = nil
+        isProbing = privacy?.isProbing ?? false
+    }
+
+    nonisolated func netServiceBrowserWillSearch(_ browser: NetServiceBrowser) {}
+
+    nonisolated func netServiceDidPublish(_ sender: NetService) {}
 }
 
 #Preview { NavigationStack { PermissionCheckView() } }
