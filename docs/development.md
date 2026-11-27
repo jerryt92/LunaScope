@@ -30,16 +30,16 @@ xcodebuild -project LunaScope.xcodeproj -scheme LunaScope \
 
 - 页面分别维护用户设置和相机读数。拍摄模式、组合规格、ISO、快门、白平衡、对焦、色彩、实况、RAW、变焦和云台模式都先更新界面，再由相机会话串行写入。收到旧读数时保留用户选择。连接和拍摄状态仍来自设备。
 - 拍照、写卡和全景合成期间保留上一帧并显示处理中。操作结束后给预览留出恢复时间，底层检测到连接断开时按原流程重连。
-- 快捷参数包括拍摄模式、规格、A／M 参数面板和色彩；变焦刻度放在取景画面正下方。照片模式另提供 App 侧「连续拍摄」：底层仍写单张照片，参数菜单下方出现「拍摄间隔」（预设秒数与自定义秒/分钟）。连续拍摄时下一张必须等上一张完成反馈后才触发；间隔从开拍时刻起算，长曝光超过间隔则完成后立即拍下一张。主控制面板提供拍照、录像、云台操作及休眠唤醒。竖屏将参数菜单放在取景上方、主控制面板放在取景与变焦下方；参数记忆作为顶部配置栏中的一项。配置栏按最小宽度换行、同行等宽，避免为了压进两行把每一项挤窄。连续拍摄间隔紧跟拍摄模式。横屏左侧为取景加变焦，变焦留在取景下方并避开底部页签；右侧滚动区顶部是参数设置，主控制面板在其下。云台记忆和恢复收在「云台位置」菜单里，记忆前需要确认。拍摄页隐藏导航栏，避免顶部空白。取景区右上角切换全屏，全屏保留原视频比例，只在画幅外放置退出和画中画按钮。点按画面可隐藏或恢复这些按钮，隐藏时让画面使用全部可用空间。
-- 拍摄面板使用一个快门。照片和全景模式拍照，录像模式开始或停止录制。预览坐标按实际收到的 HEVC 画幅计算。点按执行对焦，双击或拖出矩形启动机身追踪，追踪框使用机身回报。点测光的坐标协议尚未确认。 [影石追踪指南](https://onlinemanual.insta360.com/lunaultra/zh-cn/operation-tutorials/shooting-preview/shooting-function/smart-tracking)
+- 快捷参数包括拍摄模式、规格和 A／M 参数面板；变焦刻度放在取景画面正下方。照片模式另提供 App 侧「连续拍摄」：底层仍写单张照片，参数菜单下方出现「拍摄间隔」（预设秒数与自定义秒/分钟）。连续拍摄时下一张必须等上一张完成反馈后才触发；间隔从开拍时刻起算，长曝光超过间隔则完成后立即拍下一张。主控制面板提供拍照、录像、云台操作及休眠唤醒。竖屏将参数菜单放在取景上方、主控制面板放在取景与变焦下方；参数记忆作为顶部配置栏中的一项。配置栏按最小宽度换行、同行等宽，避免为了压进两行把每一项挤窄。连续拍摄间隔紧跟拍摄模式。横屏左侧为取景加变焦，变焦留在取景下方并避开底部页签；右侧滚动区顶部是参数设置，主控制面板在其下。云台记忆和恢复收在「云台位置」菜单里，记忆前需要确认。拍摄页隐藏导航栏，避免顶部空白。取景区右上角切换全屏，全屏保留原视频比例，只在画幅外放置退出和画中画按钮。点按画面可隐藏或恢复这些按钮，隐藏时让画面使用全部可用空间。
+- 拍摄面板使用一个快门。照片和全景模式拍照，录像模式开始或停止录制。预览坐标按实际收到的 HEVC 画幅计算。点按执行对焦，双击或拖出矩形启动机身追踪，追踪框使用机身回报。点测光的坐标协议尚未确认。 [Insta360 追踪指南](https://onlinemanual.insta360.com/lunaultra/zh-cn/operation-tutorials/shooting-preview/shooting-function/smart-tracking)
 - 全屏画幅外可以开启 iOS 画中画，画中画与内嵌取景共用同一个视频层。画中画开启时，App 内取景显示黑底和画中画图标。系统的恢复按钮回到拍摄页。 [Apple AVKit 画中画](https://developer.apple.com/videos/play/wwdc2021/10290/)
 - 预览使用相机实际发送的分辨率和帧率。持续卡顿时，先请求关键帧，空闲时才尝试同画幅的低分辨率档。低档无画面时回退默认档，链路恢复稳定后重新尝试默认档。低档是否接受取决于机型和固件。
-- A／M 面板按机身回读切换普通与专业模式。普通模式显示 A，在面板内调 EV。专业模式显示 M，横向切换快门、ISO、EV、白平衡、测光和对焦。数值用横向刻度调节。ISO 上限档写入 photography option 24，与固定感光度互斥。对焦可选连续或单次，全景模式通过配置栏的单独入口调整。模式字段与配置档位见[相机型号配置说明](camera-profile.md)。
+- A／M 面板按机身回读切换普通与专业模式。普通模式显示 A，在面板内调 EV。专业模式显示 M，横向切换快门、ISO、EV、白平衡，以及当前模式在 `imageControls` 里声明的测光、对焦和画面项。这些项只出现在专业页，配置栏不再重复。数值用横向刻度或档位按钮调节。ISO 上限档写入 photography option 24，与固定感光度互斥。对焦可选连续或单次，录像类模式另有展示对焦。全景没有 A／M 面板，对焦留在配置栏。模式字段与配置档位见[相机型号配置说明](camera-profile.md)。
 - 取景区分别显示机身和可拆卸屏幕的电量。机身使用现有电源读数，屏幕使用独立的电量回读和通知。缺少读数时显示「—」。 [电量协议记录](https://opencapture.org/openinstacine/docs/devices/luna-ultra/media/#battery-storage-and-remaining-time)
 - 变焦档位和限制来自机型配置。Ultra 的快捷档位为 1×、2×、3×、6×、12×、15×，Pro 为 1×、2×、4×。8K 和竖屏 4K 的上限分别为 6× 和 3×，Ultra 录制时还限制在当前镜头范围内。慢动作、定点延时、移动延时及高帧率录像中，Ultra 只提供 1× 和 3×，Pro 隐藏变焦。常用倍率与细调共用一条刻度尺。点按切换焦段，横向拖动以 0.025× 细调。按住期间保留界面选定的刻度，后台合并待发送的变焦指令，松手后确认最终倍率。 [官方变焦功能](https://onlinemanual.insta360.com/lunaultra/zh-cn/operation-tutorials/shooting-preview/shooting-function/zoom) [官方拍摄规格](https://onlinemanual.insta360.com/lunaultra/zh-cn/specs/shooting)
 - 单张照片模式将实况照片图标开关放在取景画面左侧居中，不可用时隐藏。标准照片发送照片库 cmd 9、type 85，字段 2 为 1（关）或 2（开）。以独立 GET 或成功的 8298 通知确认状态。切换中的值 3 不作确认。实况与超清互斥时自动切到标准规格或关掉实况，并以控制区轻提示告知，无需点确认。预设保存当前界面选择。 [官方实况照片指南](https://onlinemanual.insta360.com/lunaultra/zh-cn/operation-tutorials/shooting-preview/shooting-function/live-photo)
 
-- 激活的拍摄模式决定可用的比例、分辨率和帧率。视频三项对应同一相机格式枚举。「照片尺寸」将照片比例、标准或超清画质和对应分辨率集中到同一个菜单，每个选项一次写入比例和规格。照片格式 JPG 与 JPG+RAW 以 type 25 写入（开启 1，关闭按官方做法省略字段），随预设保存并按回读确认；RAW 以 DNG 保存。后端设置刷新不含 type 25，进入或切换照片模式后由控制台补一次完整回读，保证照片格式菜单首次进入即有读数。录像、自动、手动、优先曝光和全景快门沿用 OpenCine 的协议读写。规格列表依据 [OpenInstaCine 探测结果](https://opencapture.org/openinstacine/docs/devices/luna-ultra/modes/) 和 [影石规格](https://www.insta360.com/specs/luna-ultra)。
+- 激活的拍摄模式决定可用的比例、分辨率和帧率。视频三项对应同一相机格式枚举。「照片尺寸」将照片比例、标准或超清画质和对应分辨率集中到同一个菜单，每个选项一次写入比例和规格。照片格式 JPG 与 JPG+RAW 以 type 25 写入（开启 1，关闭按官方做法省略字段），随预设保存并按回读确认；RAW 以 DNG 保存。后端设置刷新不含 type 25，进入或切换照片模式后由控制台补一次完整回读，保证照片格式菜单首次进入即有读数。录像、自动、手动、优先曝光和全景快门沿用 OpenCine 的协议读写。规格列表依据 [OpenInstaCine 探测结果](https://opencapture.org/openinstacine/docs/devices/luna-ultra/modes/) 和 [Insta360 规格](https://www.insta360.com/specs/luna-ultra)。
 - 首次连接、重连或进入单张照片模式后，单独读取照片尺寸与 JPG / RAW。首个回复缺失时短暂重试，连接期间无需等待拍摄状态先到达。
 - 参数预设统一保存 M 档参数。在 A 档保存时优先使用当前拍摄模式上次的 M 档参数。尚无读数时，相机会短暂切到 M 档读取，再恢复 A 档。只有保存为 M 档的预设可以应用。应用时先确认机身已切到 M 档，再写入曝光参数。全景模式在控制台没有 A／M 入口，因此不参与此流程。
 - 云台记忆绑定保存时的相机，保存机柄坐标和相机回报的翻转状态。恢复时先比较翻转状态，必要时执行翻转，再调整角度，并分别回读确认。旧记录和未回报翻转状态时保存的记录仅恢复角度，页面会提示。 [云台角度协议](https://opencapture.org/openinstacine/docs/devices/luna-ultra/controls/#absolute-angle) [设备选项协议定义](https://github.com/iliakonnov/insta360-nas/blob/b78dddb9cd9bc2cf632871646c6f5af238e582d4/insta360-server/insta360_messages.proto#L6259)
@@ -57,7 +57,7 @@ xcodebuild -project LunaScope.xcodeproj -scheme LunaScope \
 | `deviceModels`、`bluetoothPrefixes` | 填入设备信息中的完整型号及蓝牙广播名称前缀。连接以相机实际回报的型号为准。 |
 | `modes`、`videoDefinitions` | 每个启用的模式列出可写入的 `videoFormats` 协议编号。`tracking` 控制该模式下的画面追踪手势。共享表没有的编号可用可选的 `videoDefinitions` 补充 `width`、`height` 和 `framesPerSecond`。 |
 | `photoFormats`、`rawPhoto`、`livePhotoFormatIDs` | 定义照片的编号、比例和比例码、画质、宽高，以及 RAW 和允许开启实况照片的规格。 |
-| `exposure`、`whiteBalance`、`focusModes`、`colors`、`colorOverrides` | 定义 ISO、可选的 `isoMax` 上限档、快门倒数与照片长曝光秒数、色温范围和步长，以及对焦和色彩选项。某规格只允许一种色彩时，切换规格的命令会同时写入该色彩。 |
+| `exposure`、`whiteBalance`、`imageControls`、`colors`、`colorOverrides` | 定义 ISO、可选的 `isoMax` 上限档、快门倒数与照片长曝光秒数、色温范围和步长。`imageControls` 按拍摄模式声明测光、对焦、呼吸补偿、对比度、饱和度、锐度和色彩，并带恢复默认值。某规格只允许一种色彩时，切换规格的命令会同时写入该色彩。 |
 | `zoomStops`、`modes.*.zoom`、`modes.*.zoomOverrides` | 定义快捷档位、模式范围和视频规格例外。用 `maximum` 表示连续变焦，`fixedStops` 表示仅可选固定档位，`null` 表示关闭。多镜头连续变焦可用按升序排列的 `recordingLensStarts` 限制录制中的镜头切换。 |
 | `gimbalModes`、`detachableScreen` | 定义可用的云台模式与独立屏幕电量显示。空云台列表会隐藏云台控制。 |
 

@@ -936,7 +936,7 @@ final class CameraController {
     }
 
     func focusPreview(at point: CGPoint, aspect: Double) -> Bool {
-        guard canUsePreviewGestures, cameraProfile?.focusChoices.isEmpty == false else { return false }
+        guard canUsePreviewGestures, let shootingMode, cameraProfile?.focusChoices(for: shootingMode).isEmpty == false else { return false }
         return sendPreviewCommand(title: "console.preview.focusFailed") { completion in
             try subjectTracking.focus(x: Double(point.x), y: Double(point.y), aspectRatio: aspect, finished: completion)
         }
@@ -1230,12 +1230,18 @@ final class CameraController {
         }
     }
 
+    /// 当前拍摄模式在机型 JSON 里声明的对焦档。
+    var focusChoices: [LunaAFMode] {
+        guard let cameraProfile, let shootingMode else { return [] }
+        return cameraProfile.focusChoices(for: shootingMode)
+    }
+
     var currentFocusChoice: LunaAFMode? {
-        cameraProfile?.focusChoices.first { $0.rawValue == parameters?.autofocus }
+        focusChoices.first { $0.rawValue == parameters?.autofocus }
     }
 
     func setNativeFocus(_ focus: LunaAFMode) {
-        guard canEditShootingSettings, let mode = shootingMode, cameraProfile?.focusChoices.contains(focus) == true,
+        guard canEditShootingSettings, let mode = shootingMode, focusChoices.contains(focus),
               parameters?.autofocus != focus.rawValue else { return }
         var changes = ConsoleParameters(mode: mode)
         changes.autofocus = focus.rawValue
@@ -1248,8 +1254,8 @@ final class CameraController {
     }
 
     func setNativeColor(_ color: LunaColorMode) {
-        guard canEditShootingSettings, let mode = shootingMode, !mode.isPhoto,
-              cameraProfile?.colorChoices(for: parameters?.format).contains(color) == true,
+        guard canEditShootingSettings, let mode = shootingMode,
+              cameraProfile?.colorChoices(for: parameters?.format, mode: mode).contains(color) == true,
               parameters?.color != color.rawValue else { return }
         var changes = ConsoleParameters(mode: mode)
         changes.color = color.rawValue
@@ -1258,6 +1264,62 @@ final class CameraController {
             let request = try LunaProtocol.setColorMode(color, functionMode: mode.functionMode.rawValue)
             return try await commands.write(request, in: mode, options: [35],
                                             isCurrent: isCurrent) { $0.color == color.rawValue }
+        }
+    }
+
+    /// 当前模式可见的画面项。隐藏条件来自 JSON 的 visibleWhen。
+    func visibleImageControls() -> [ConsoleCameraProfile.ImageControl] {
+        guard let cameraProfile, let shootingMode else { return [] }
+        return cameraProfile.imageControls(for: shootingMode).filter { control in
+            control.isVisible { parameters?.imageValue(id: $0) }
+        }
+    }
+
+    /// 按标识取当前可见的画面项。
+    func visibleImageControl(id: String) -> ConsoleCameraProfile.ImageControl? {
+        visibleImageControls().first { $0.id == id }
+    }
+
+    /// 这项在当前格式下可选的线值。
+    func imageChoiceValues(for control: ConsoleCameraProfile.ImageControl) -> [UInt64] {
+        guard let cameraProfile, let shootingMode else { return control.choices }
+        return cameraProfile.choiceValues(for: control, format: parameters?.format, mode: shootingMode)
+    }
+
+    /// 把画面项写成 JSON 里的默认值。格式收窄后默认值不在列表里时改写唯一可选项。
+    func restoreImageControl(_ control: ConsoleCameraProfile.ImageControl) {
+        let choices = imageChoiceValues(for: control)
+        let value = choices.contains(control.defaultValue) ? control.defaultValue : (choices.count == 1 ? choices[0] : nil)
+        guard let value else { return }
+        setImageControl(control, value: value)
+    }
+
+    /// 写入一项画面调节。对焦和色彩走原有确认字段，其余按 option 号下发。
+    func setImageControl(_ control: ConsoleCameraProfile.ImageControl, value: UInt64) {
+        if control.id == "metering" {
+            setMetering(value != 0)
+            return
+        }
+        if control.id == "focus", let focus = LunaAFMode(rawValue: value) {
+            setNativeFocus(focus)
+            return
+        }
+        if control.id == "color", let color = LunaColorMode(rawValue: value) {
+            setNativeColor(color)
+            return
+        }
+        guard canEditShootingSettings, let mode = shootingMode,
+              visibleImageControl(id: control.id) != nil,
+              imageChoiceValues(for: control).contains(value),
+              parameters?.imageValue(id: control.id) != value,
+              let type = LunaPhotographyType(rawValue: control.option) else { return }
+        var changes = ConsoleParameters(mode: mode)
+        changes.setImageValue(id: control.id, value)
+        enqueueParameters(changes, title: String(localized: "console.error.setting"),
+                          coalesceKey: control.id) { commands, isCurrent in
+            let request = try LunaProtocol.setPhotographyValue(type, value, functionMode: mode.functionMode.rawValue)
+            return try await commands.write(request, in: mode, options: [control.option],
+                                            isCurrent: isCurrent) { $0.imageValue(id: control.id) == value }
         }
     }
 

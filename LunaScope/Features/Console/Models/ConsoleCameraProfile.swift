@@ -10,6 +10,90 @@ struct ConsoleCameraProfile: Decodable {
         let tracking: Bool?
     }
 
+    /// 画面调节项。出现在哪些拍摄模式、可选值和恢复默认值都写在机型 JSON 里。
+    struct ImageControl: Decodable, Equatable {
+        /// 稳定标识，同一模式内不重复。
+        let id: String
+        /// 摄影 option 类型号。
+        let option: UInt32
+        /// 拥有这项的拍摄模式，取值与 `modes` 的键相同。
+        let modes: [String]
+        /// 可选线值，顺序即界面顺序。
+        let choices: [UInt64]
+        /// 恢复默认时写回的线值。
+        let defaultValue: UInt64
+        /// 有符号显示的零点。对比度线值 3 显示为 0。
+        let origin: UInt64?
+        /// 线值到本地化 key。缺省时用枚举名、原点偏移或数字。
+        let labels: [String: String]?
+        /// 另一项的当前线值不在列表中时隐藏。
+        let visibleWhen: VisibleWhen?
+
+        /// 按另一项的当前值决定本项是否出现。
+        struct VisibleWhen: Decodable, Equatable {
+            let id: String
+            let values: [UInt64]
+        }
+
+        enum CodingKeys: String, CodingKey {
+            case id, option, modes, choices, origin, labels, visibleWhen
+            case defaultValue = "default"
+        }
+
+        /// 当前线值的界面文字。
+        func choiceLabel(_ value: UInt64) -> String {
+            if let key = labels?[String(value)] {
+                return String(localized: String.LocalizationValue(key))
+            }
+            if id == "focus", let focus = LunaAFMode(rawValue: value) { return focus.label }
+            if id == "color", let color = LunaColorMode(rawValue: value) {
+                switch color {
+                case .standard: return String(localized: "console.settings.colorStandard")
+                case .vivid: return String(localized: "console.settings.colorVivid")
+                case .iLog, .hdr, .dolbyVision: return color.label
+                }
+            }
+            if let origin {
+                let delta = Int(value) - Int(origin)
+                return delta > 0 ? "+\(delta)" : "\(delta)"
+            }
+            return String(value)
+        }
+
+        /// 项目名称。
+        var title: String {
+            switch id {
+            case "focus": String(localized: "console.settings.focus")
+            case "breathingCompensation": String(localized: "console.settings.breathingCompensation")
+            case "contrast": String(localized: "console.settings.contrast")
+            case "saturation": String(localized: "console.settings.saturation")
+            case "sharpness": String(localized: "console.settings.sharpness")
+            case "color": String(localized: "console.settings.color")
+            default: id
+            }
+        }
+
+        /// 项目图标。
+        var symbol: String {
+            switch id {
+            case "focus": "scope"
+            case "breathingCompensation": "lungs"
+            case "contrast": "circle.lefthalf.filled"
+            case "saturation": "drop.fill"
+            case "sharpness": "triangle"
+            case "color": "paintpalette"
+            default: "slider.horizontal.3"
+            }
+        }
+
+        /// 另一项当前值未知时仍显示；已知且不在允许列表里则隐藏。
+        func isVisible(currentValue: (String) -> UInt64?) -> Bool {
+            guard let visibleWhen else { return true }
+            guard let current = currentValue(visibleWhen.id) else { return true }
+            return visibleWhen.values.contains(current)
+        }
+    }
+
     struct VideoDefinition: Decodable {
         let width: Int
         let height: Int
@@ -91,15 +175,29 @@ struct ConsoleCameraProfile: Decodable {
     let livePhotoFormatIDs: [UInt64]
     let exposure: Exposure
     let whiteBalance: WhiteBalance
-    private let focusModes: [UInt64]
     private let colors: [UInt64]
     private let colorOverrides: [String: [UInt64]]
+    private let imageControls: [ImageControl]?
     let zoomStops: [Double]
     private let gimbalModes: [UInt64]
     let detachableScreen: Bool
 
     var captureModes: [ConsoleCaptureMode] { ConsoleCaptureMode.allCases.filter { modes[$0.rawValue] != nil } }
-    var focusChoices: [LunaAFMode] { focusModes.compactMap(LunaAFMode.init(rawValue:)) }
+
+    /// 当前拍摄模式在 JSON 里声明的画面项。默认值不在可选值里的项不采用。
+    func imageControls(for mode: LunaShootingMode) -> [ImageControl] {
+        let key = ConsoleCaptureMode(mode).rawValue
+        var seen = Set<String>()
+        return (imageControls ?? []).filter { control in
+            control.modes.contains(key) && control.choices.contains(control.defaultValue)
+                && seen.insert(control.id).inserted
+        }
+    }
+
+    /// 对焦档位取当前模式的 focus 项，不在代码里按照片或视频删减。
+    func focusChoices(for mode: LunaShootingMode) -> [LunaAFMode] {
+        imageControls(for: mode).first { $0.id == "focus" }?.choices.compactMap(LunaAFMode.init(rawValue:)) ?? []
+    }
     var gimbalChoices: [LunaGimbalMode] { gimbalModes.compactMap(LunaGimbalMode.init(rawValue:)) }
     var zoomDomain: ClosedRange<Double>? {
         let rules = modes.values.flatMap { mode in
@@ -136,9 +234,18 @@ struct ConsoleCameraProfile: Decodable {
         format.map(livePhotoFormatIDs.contains) ?? false
     }
 
-    func colorChoices(for format: UInt64?) -> [LunaColorMode] {
-        let values = format.flatMap { colorOverrides[String($0)] } ?? colors
-        return values.compactMap(LunaColorMode.init(rawValue:))
+    /// 色彩档位。模式没有 color 项时为空；格式覆盖仍以 `colorOverrides` 为准。
+    func colorChoices(for format: UInt64?, mode: LunaShootingMode) -> [LunaColorMode] {
+        guard let control = imageControls(for: mode).first(where: { $0.id == "color" }) else { return [] }
+        let listed = format.flatMap { colorOverrides[String($0)] } ?? control.choices
+        return listed.filter { colors.contains($0) }.compactMap(LunaColorMode.init(rawValue:))
+    }
+
+    /// 某项在当前格式下真正可选的线值。
+    func choiceValues(for control: ImageControl, format: UInt64?, mode: LunaShootingMode) -> [UInt64] {
+        guard control.id == "color" else { return control.choices }
+        let narrowed = colorChoices(for: format, mode: mode).map(\.rawValue)
+        return narrowed.isEmpty ? control.choices : narrowed
     }
 
     func requiredColor(for format: UInt64) -> LunaColorMode? {

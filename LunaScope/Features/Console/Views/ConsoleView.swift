@@ -658,9 +658,9 @@ struct ConsoleView: View {
         .frame(width: Layout.shutterWidth, height: Layout.shutterHeight)
     }
 
-    /// 顶部配置栏槽位；拍摄间隔紧跟模式，其余按原有顺序。
+    /// 顶部配置栏槽位。手动面板里已有的项不再排到外面；全景没有手动面板，对焦留在这里。
     private enum ParameterSlot: Hashable {
-        case mode, interval, format(ConsoleFormatControl), exposure, focus, color, presets
+        case mode, interval, format(ConsoleFormatControl), exposure, focus, presets
     }
 
     private var parameterSlots: [ParameterSlot] {
@@ -668,11 +668,10 @@ struct ConsoleView: View {
         if camera.continuousPhoto { slots.append(.interval) }
         slots.append(contentsOf: ConsoleFormatControl.available(for: camera).map(ParameterSlot.format))
         if camera.shootingMode == .pano {
-            slots.append(.focus)
+            if !camera.focusChoices.isEmpty { slots.append(.focus) }
         } else {
             slots.append(.exposure)
         }
-        if let mode = camera.shootingMode, !mode.isPhoto { slots.append(.color) }
         slots.append(.presets)
         return slots
     }
@@ -732,7 +731,6 @@ struct ConsoleView: View {
         case .format(let control): ConsoleFormatControls(camera: camera, control: control)
         case .exposure: ConsoleExposureControls(camera: camera) { shutterButton }
         case .focus: focusMenu
-        case .color: colorMenu
         case .presets: presetsEntry
         }
     }
@@ -1019,7 +1017,7 @@ struct ConsoleView: View {
 
     private var focusMenu: some View {
         let current = camera.currentFocusChoice
-        let choices = camera.cameraProfile?.focusChoices ?? []
+        let choices = camera.focusChoices
         return Menu {
             ForEach(choices, id: \.rawValue) { focus in
                 Button { camera.setNativeFocus(focus) } label: {
@@ -1032,22 +1030,6 @@ struct ConsoleView: View {
         }
         .consoleMenu(camera.canEditShootingSettings && camera.parameters?.autofocus != nil && !choices.isEmpty)
         .accessibilityIdentifier("console.settings.focus")
-    }
-
-    private var colorMenu: some View {
-        let current = camera.parameters?.color.flatMap(LunaColorMode.init(rawValue:))
-        return Menu {
-            ForEach(camera.cameraProfile?.colorChoices(for: camera.parameters?.format) ?? [], id: \.rawValue) { color in
-                Button { camera.setNativeColor(color) } label: {
-                    if current == color { Label(color.localizedLabel, systemImage: "checkmark") }
-                    else { Text(color.localizedLabel) }
-                }
-            }
-        } label: {
-            ConsoleMenuLabel(title: "console.settings.color", value: current?.localizedLabel)
-        }
-        .consoleMenu(camera.canEditShootingSettings && current != nil)
-        .accessibilityIdentifier("console.settings.color")
     }
 
 }
@@ -1262,16 +1244,6 @@ extension LunaAFMode {
         case .single: String(localized: "console.settings.singleAF")
         case .continuous: String(localized: "console.settings.continuousAF")
         case .productShowcase: String(localized: "console.settings.productFocus")
-        }
-    }
-}
-
-private extension LunaColorMode {
-    var localizedLabel: String {
-        switch self {
-        case .standard: String(localized: "console.settings.colorStandard")
-        case .vivid: String(localized: "console.settings.colorVivid")
-        case .iLog, .hdr, .dolbyVision: label
         }
     }
 }

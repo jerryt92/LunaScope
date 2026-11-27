@@ -406,6 +406,24 @@
 
 "console.settings.colorVivid" = "鲜艳";
 
+"console.settings.breathingCompensation" = "呼吸补偿";
+
+"console.settings.contrast" = "对比度";
+
+"console.settings.saturation" = "饱和度";
+
+"console.settings.sharpness" = "锐度";
+
+"console.settings.sharpnessLow" = "低";
+
+"console.settings.sharpnessMedium" = "中";
+
+"console.settings.sharpnessHigh" = "高";
+
+"console.settings.off" = "关";
+
+"console.settings.on" = "开";
+
 "console.settings.continuousAF" = "连续 AF";
 
 "console.settings.exposureControls" = "拍摄参数";
@@ -464,9 +482,67 @@
 
 "feature.console.title" = "拍摄";
 
+"news.done" = "我知道了";
+
+"news.privacy.detail" = "画面、照片、视频和拍摄参数只在本机与已连接的相机之间传输。LunaScope 不上传这些内容，也不会出售或分享你的隐私。诊断日志只包含应用事件和设备信息，只有你主动分享时才会离开设备。";
+
+"news.privacy.title" = "不会泄露你的隐私";
+
+"news.sdk.detail" = "LunaScope 通过开源项目 OpenCine 连接 Insta360 Luna 系列相机。连接、拍摄控制和相册读取来自对相机协议的逆向研究，不是 Insta360 官方 SDK，也不由 Insta360 提供或认可。";
+
+"news.sdk.title" = "使用开源逆向的非官方实现";
+
+"news.stability.detail" = "固件变化、无线信号或系统限制后台时，连接和预览可能中断，连续拍摄也可能中途停止。正式拍摄前请先试拍，并以相机存储中的成片为准。";
+
+"news.stability.title" = "可能不稳定，连拍会中断";
+
+"news.title" = "使用前请了解";
+
+"permissions.action.allow" = "允许";
+
 "permissions.action.settings" = "打开系统设置";
 
+"permissions.bluetooth.detail" = "用于发现附近的 Insta360 Luna 系列相机，并完成配对。";
+
+"permissions.bluetooth.title" = "蓝牙";
+
+"permissions.check.title" = "权限检查";
+
+"permissions.localNetwork.detail" = "用于在相机网络上接收实时画面、发送控制指令和读取原片。系统不提供现成的授权状态，点按允许后才会询问。";
+
+"permissions.localNetwork.title" = "本地网络";
+
+"permissions.localNetwork.waiting" = "等待系统确认";
+
+"permissions.location.detail" = "用于读取当前 Wi-Fi 名称，确认手机已经加入相机网络。不会记录你的位置。";
+
+"permissions.location.title" = "位置";
+
+"permissions.networkAccess.footer" = "若系统限制了本 App 的无线数据，连接相机网络也可能失败。";
+
+"permissions.networkAccess.title" = "网络访问";
+
+"permissions.photos.detail" = "用于把你从相机勾选的照片和视频保存到系统照片 App 的 LunaScope 相册。";
+
+"permissions.photos.title" = "照片";
+
+"permissions.section.title" = "连接与保存";
+
+"permissions.status.allowed" = "已允许";
+
+"permissions.status.denied" = "已拒绝";
+
+"permissions.status.notDetermined" = "尚未授权";
+
+"permissions.status.restricted" = "已受限";
+
+"permissions.status.unchecked" = "尚未检查";
+
 "permissions.status.unknown" = "暂无";
+
+"permissions.wirelessData.detail" = "系统限制无线数据时，可能无法访问相机网络。";
+
+"permissions.wirelessData.title" = "无线数据";
 
 "settings.about.developerEmail" = "开发者邮箱";
 
@@ -527,6 +603,8 @@
 "settings.licenses.usage.kcp" = "随相机通信模块提供，用于可拆卸屏幕控制通道的 UDP 可靠传输。";
 
 "settings.licenses.usage.openCine" = "LunaScope 使用 OpenCine 实现相机连接、拍摄参数控制、实时取景和相册缩略图处理。LunaScopeTransport 在其相机适配代码基础上接入 Insta360 Luna 系列相机。";
+
+"settings.news.title" = "查看声明";
 
 "tab.album" = "相册";
 

@@ -11,6 +11,57 @@ final class ConsoleControlsTests: XCTestCase {
         try XCTUnwrap(ConsoleCameraProfile.matching("Insta360 Luna Ultra"))
     }
 
+    /// 画面项的模式归属和恢复默认值都来自机型 JSON。
+    @MainActor
+    func testImageControlsDeclareModeMembershipAndDefaults() throws {
+        let ultra = try ultraProfile()
+        let pro = try XCTUnwrap(ConsoleCameraProfile.matching("Insta360 Luna Pro"))
+        let recording: [LunaShootingMode] = [.video, .pureVideo, .slowMotion, .timelapse, .timeShift]
+        let ids = ["metering", "focus", "breathingCompensation", "contrast", "saturation", "sharpness", "color"]
+        for profile in [ultra, pro] {
+            for mode in recording {
+                let controls = profile.imageControls(for: mode)
+                XCTAssertEqual(controls.map(\.id), ids)
+                XCTAssertTrue(controls.allSatisfy { $0.choices.contains($0.defaultValue) })
+                XCTAssertEqual(profile.focusChoices(for: mode).map(\.rawValue), [1, 3, 6])
+                XCTAssertEqual(controls.first { $0.id == "breathingCompensation" }?.defaultValue, 0)
+                XCTAssertEqual(controls.first { $0.id == "contrast" }?.defaultValue, 3)
+                XCTAssertEqual(controls.first { $0.id == "saturation" }?.defaultValue, 3)
+                XCTAssertEqual(controls.first { $0.id == "sharpness" }?.defaultValue, 1)
+                XCTAssertEqual(controls.first { $0.id == "metering" }?.defaultValue, 1)
+                XCTAssertEqual(controls.first { $0.id == "color" }?.defaultValue, 1)
+                let contrast = try XCTUnwrap(controls.first { $0.id == "contrast" })
+                XCTAssertFalse(contrast.isVisible { $0 == "color" ? 2 : nil })
+                XCTAssertTrue(contrast.isVisible { $0 == "color" ? 1 : nil })
+            }
+            for mode in [LunaShootingMode.photo, .pano] {
+                XCTAssertEqual(profile.imageControls(for: mode).map(\.id), mode == .photo ? ["metering", "focus"] : ["focus"])
+                if mode == .photo {
+                    XCTAssertEqual(profile.imageControls(for: mode).first { $0.id == "metering" }?.defaultValue, 1)
+                }
+                XCTAssertEqual(profile.focusChoices(for: mode).map(\.rawValue), [1, 3])
+                XCTAssertTrue(profile.colorChoices(for: nil, mode: mode).isEmpty)
+            }
+            var photo = ConsoleParameters(mode: .photo)
+            photo.autofocus = LunaAFMode.productShowcase.rawValue
+            photo.contrast = 5
+            photo.color = 2
+            let dropped = photo.restorable(for: profile)
+            XCTAssertNil(dropped.autofocus)
+            XCTAssertNil(dropped.contrast)
+            XCTAssertNil(dropped.color)
+
+            var video = ConsoleParameters(mode: .video)
+            video.autofocus = LunaAFMode.productShowcase.rawValue
+            video.contrast = 5
+            video.color = 1
+            let kept = video.restorable(for: profile)
+            XCTAssertEqual(kept.autofocus, LunaAFMode.productShowcase.rawValue)
+            XCTAssertEqual(kept.contrast, 5)
+            XCTAssertEqual(kept.color, 1)
+        }
+    }
+
     @MainActor
     func testPresetStoreRoundTripsMultipleNamedSetsAndOnlyTheLatestPosition() throws {
         let suite = "ConsoleControlsTests." + UUID().uuidString

@@ -48,6 +48,10 @@ public enum LunaCommand: UInt16, Sendable {
 /// Numbers marked Observed were SET by the official app; the rest were only
 /// read by it (GET on connect) and are Source-backed as SET targets.
 public enum LunaPhotographyType: UInt32, Sendable, CaseIterable {
+    /// 对比度。官方整组 SET 的中性值是 3。
+    case contrast = 3
+    /// 饱和度。官方整组 SET 的中性值是 3。
+    case saturation = 4
     case sharpness = 6              // Observed SET
     case exposureBias = 7           // Observed SET
     /// fw v1.1.15 answers a GET of 13 by writing field 39 = 0, clobbering the
@@ -77,6 +81,8 @@ public enum LunaPhotographyType: UInt32, Sendable, CaseIterable {
     case gimbalPanoType = 98        // GET only (pano mode)
     case remainingTime = 99         // Observed GET, polled
     case iq3AMode = 100             // Observed inside exposure SETs
+    /// 呼吸补偿（FOVC）。0 关，1 开；关时 proto3 会省略字段。
+    case breathingCompensation = 101
     case gammaModeLevel = 104       // Filter strength; GET only
 }
 

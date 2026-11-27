@@ -72,7 +72,7 @@ struct ConsoleCameraCommands {
         if mode == .photo, let raw = saved.rawCapture {
             try await push(ConsoleCaptureFormats.rawRequest(raw), isCurrent: isCurrent)
         }
-        if let raw = saved.color, let color = LunaColorMode(rawValue: raw), !mode.isPhoto {
+        if let raw = saved.color, let color = LunaColorMode(rawValue: raw) {
             try await push(try LunaProtocol.setColorMode(color, functionMode: bank), isCurrent: isCurrent)
         }
         if let zoom = saved.zoom {
@@ -98,6 +98,18 @@ struct ConsoleCameraCommands {
         }
         if let autofocus = saved.autofocus, let focus = LunaAFMode(rawValue: autofocus) {
             try await push(try LunaProtocol.setAFMode(focus, functionMode: bank), isCurrent: isCurrent)
+        }
+        if let value = saved.breathingCompensation {
+            try await push(try LunaProtocol.setPhotographyValue(.breathingCompensation, value, functionMode: bank), isCurrent: isCurrent)
+        }
+        if let value = saved.contrast {
+            try await push(try LunaProtocol.setPhotographyValue(.contrast, value, functionMode: bank), isCurrent: isCurrent)
+        }
+        if let value = saved.saturation {
+            try await push(try LunaProtocol.setPhotographyValue(.saturation, value, functionMode: bank), isCurrent: isCurrent)
+        }
+        if let value = saved.sharpness {
+            try await push(try LunaProtocol.setPhotographyValue(.sharpness, value, functionMode: bank), isCurrent: isCurrent)
         }
         if mode == .photo, let live = saved.livePhoto {
             try await push(ConsoleLivePhoto.request(live), isCurrent: isCurrent)
@@ -322,7 +334,8 @@ struct ConsoleCameraCommands {
             }
         }
         if let raw = saved.color, raw != current.color {
-            guard let color = LunaColorMode(rawValue: raw), profile.colorChoices(for: current.format).contains(color) else {
+            guard let color = LunaColorMode(rawValue: raw),
+                  profile.colorChoices(for: current.format, mode: mode).contains(color) else {
                 throw ControlError.settingUnavailable
             }
             current = try await write(LunaProtocol.setColorMode(color, functionMode: bank), in: mode,
@@ -361,6 +374,30 @@ struct ConsoleCameraCommands {
             current.merge(try await write(LunaProtocol.setAFMode(focus, functionMode: bank), in: mode,
                                           options: [93], isCurrent: isCurrent) {
                 $0.autofocus == autofocus
+            })
+        }
+        if let value = saved.breathingCompensation, value != current.breathingCompensation {
+            current.merge(try await write(LunaProtocol.setPhotographyValue(.breathingCompensation, value, functionMode: bank),
+                                          in: mode, options: [101], isCurrent: isCurrent) {
+                $0.breathingCompensation == value
+            })
+        }
+        if let value = saved.contrast, value != current.contrast {
+            current.merge(try await write(LunaProtocol.setPhotographyValue(.contrast, value, functionMode: bank),
+                                          in: mode, options: [3], isCurrent: isCurrent) {
+                $0.contrast == value
+            })
+        }
+        if let value = saved.saturation, value != current.saturation {
+            current.merge(try await write(LunaProtocol.setPhotographyValue(.saturation, value, functionMode: bank),
+                                          in: mode, options: [4], isCurrent: isCurrent) {
+                $0.saturation == value
+            })
+        }
+        if let value = saved.sharpness, value != current.sharpness {
+            current.merge(try await write(LunaProtocol.setPhotographyValue(.sharpness, value, functionMode: bank),
+                                          in: mode, options: [6], isCurrent: isCurrent) {
+                $0.sharpness == value
             })
         }
         if let live = saved.livePhoto {

@@ -25,7 +25,7 @@
 | `livePhotoFormatIDs` | `[UInt64]` | 允许开启实况照片的照片规格 ID |
 | `exposure` | `Object` | ISO / 快门档位，见 §4 |
 | `whiteBalance` | `Object` | 色温范围与步进（开尔文） |
-| `focusModes` | `[UInt64]` | 控制台允许显示和写入的对焦模式协议值，见 §5 |
+| `imageControls` | 数组 | 各拍摄模式的画面项、可选值和恢复默认值，见 §5.4 |
 | `colors` | `[UInt64]` | 默认可选色彩模式，见 §5 |
 | `colorOverrides` | `{ "格式ID": [色彩ID...] }` | 特定视频格式强制/收窄色彩 |
 | `zoomStops` | `[Double]` | UI 变焦档位标记（不等于协议命令） |
@@ -161,7 +161,7 @@ Key 对应 `ConsoleCaptureMode` / `LunaShootingMode`：
 
 A／M 对应当前拍摄模式的摄影选项 `100`（`IQ_3A_MODE`）。值为 `1` 时显示 **A（普通）**，为 `2` 时显示 **M（专业）**。点按后面板立即切换，机身写入与回读在后台排队。下发失败时恢复为相机回报的模式。
 
-普通模式在面板内提供 EV 曝光补偿。专业模式提供快门、ISO、EV、白平衡、测光和对焦，快门和 ISO 可以各自选自动。机型 JSON 提供可选参数档位。
+普通模式在面板内提供 EV 曝光补偿。专业模式提供快门、ISO、EV、白平衡、测光和对焦，快门和 ISO 可以各自选自动。机型 JSON 的 `imageControls` 再追加当前模式声明的画面项。
 
 ---
 
@@ -169,14 +169,33 @@ A／M 对应当前拍摄模式的摄影选项 `100`（`IQ_3A_MODE`）。值为 `
 
 这些数字对应 `LunaTransportProtocol` 里的枚举。
 
-### 5.1 `focusModes` → `LunaAFMode`
+### 5.1 对焦 `imageControls` 中 `id: focus` → `LunaAFMode`
 
 | ID | 含义 |
 |---:|---|
 | `1` | AF-S（单次对焦） |
 | `3` | AF-C（连续对焦） |
+| `6` | 展示对焦（Product Showcase） |
 
- Insta360 Luna 系列相机的内置配置均采用 `[1, 3]`。对焦入口位于 A／M 面板的专业页。全景模式的对焦入口位于拍摄配置栏。恢复预设时按机型配置过滤对焦值。
+哪些模式列出展示对焦，由该项的 `modes` 决定。当前录像类模式是 `[1, 3, 6]`，照片和全景是 `[1, 3]`，默认都是 `3`。对焦入口位于 A／M 面板的专业页。全景模式的对焦入口位于拍摄配置栏。恢复预设时按当前模式的 `choices` 过滤。
+
+### 5.4 `imageControls`
+
+每一项声明 `id`、摄影 option、`modes`、`choices` 和 `default`。`default` 必须落在 `choices` 里，专业页的重置按钮写回这个值。`origin` 把线值显示成相对零点的有符号数。`labels` 把线值映射到本地化 key。`visibleWhen` 在另一项的当前值不在列表中时隐藏本项。
+
+测光（`metering`，option `46`）在录像类模式和照片里可选：`0` 矩阵测光，`1` 人脸优先，默认 `1`。全景不列出。
+
+当前录像类模式（`video`、`pureVideo`、`slowMotion`、`timelapse`、`timeShift`）除测光和对焦外还有：
+
+| id | option | 可选值 | 默认 | 说明 |
+|---|---:|---|---:|---|
+| `breathingCompensation` | 101 | `0` 关，`1` 开 | `0` | 呼吸补偿 |
+| `contrast` | 3 | `1`…`5`，原点 `3` | `3` | 界面显示 −2…+2。I-Log（色彩 `2`）时隐藏 |
+| `saturation` | 4 | `1`…`5`，原点 `3` | `3` | 同上 |
+| `sharpness` | 6 | `0` 低，`1` 中，`2` 高 | `1` | I-Log 时隐藏 |
+| `color` | 35 | `1` 标准，`2` I-Log，`5` 杜比视界 | `1` | 只在专业页。格式覆盖仍看 `colorOverrides` |
+
+照片列出测光和对焦。全景只有对焦。控制台按 `modes` 决定是否列出。
 
 ### 5.2 `colors` / `colorOverrides` → `LunaColorMode`
 

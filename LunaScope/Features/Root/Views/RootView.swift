@@ -6,6 +6,7 @@ struct RootView: View {
 
     let camera: CameraController
     @State private var tab: RootTab = .connection
+    @State private var isShowingAnnouncement = false
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.horizontalSizeClass) private var sizeClass
 
@@ -34,7 +35,7 @@ struct RootView: View {
             .tabItem { Label("tab.album", systemImage: "photo.on.rectangle") }
             .tag(RootTab.album)
 
-            SettingsView()
+            SettingsView { isShowingAnnouncement = true }
                 .environment(\.horizontalSizeClass, sizeClass)
                 .tabItem { Label("tab.settings", systemImage: "gearshape") }
                 .tag(RootTab.settings)
@@ -42,8 +43,14 @@ struct RootView: View {
         .tabViewStyle(.tabBarOnly)
         // iPad 也使用底部页签，每页仍按窗口的实际宽度布局。
         .environment(\.horizontalSizeClass, .compact)
-        .onChange(of: scenePhase) { previous, phase in
+        .sheet(isPresented: $isShowingAnnouncement) {
+            AppAnnouncementView()
+                .presentationDragIndicator(.hidden)
+                .interactiveDismissDisabled()
+        }
+        .onChange(of: scenePhase, initial: true) { previous, phase in
             if previous == .active && phase != .active { camera.releaseGimbal() }
+            if phase == .active { showAnnouncementIfNeeded() }
         }
         .onChange(of: camera.connected) { _, connected in
             // 仅在连接页等待时跳转，避免相册/设置页被重连打断。
@@ -52,6 +59,15 @@ struct RootView: View {
         .onChange(of: camera.previewRestoreRequest) { _, request in
             if request != nil { tab = .shooting }
         }
+    }
+
+    /// 标识与上次展示的不同时自动弹出，并记下本次标识。
+    private func showAnnouncementIfNeeded() {
+        let defaults = UserDefaults.standard
+        let announcementID = AppAnnouncementView.announcementID
+        guard defaults.string(forKey: AppAnnouncementView.lastShownDefaultsKey) != announcementID else { return }
+        defaults.set(announcementID, forKey: AppAnnouncementView.lastShownDefaultsKey)
+        isShowingAnnouncement = true
     }
 }
 

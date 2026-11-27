@@ -1,10 +1,13 @@
 import XCTest
 
 final class ConsoleNavigationTests: XCTestCase {
+    /// 与 `AppAnnouncementView.announcementID` 保持一致，避免声明挡住其他用例。
+    private let seenAnnouncement = ["-news.lastShownID", "unofficial-sdk-1"]
+
     @MainActor
     func testCameraDiscoveryHasItsOwnMenu() {
         let app = XCUIApplication()
-        app.launchArguments = ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+        app.launchArguments = ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"] + seenAnnouncement
         app.launch()
 
         let connection = app.tabBars.buttons["连接"]
@@ -27,7 +30,7 @@ final class ConsoleNavigationTests: XCTestCase {
     @MainActor
     func testAlbumTabRemainsAccessibleFromShooting() {
         let app = XCUIApplication()
-        app.launchArguments = ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+        app.launchArguments = ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"] + seenAnnouncement
         app.launch()
 
         let album = app.tabBars.buttons["相册"]
@@ -50,7 +53,7 @@ final class ConsoleNavigationTests: XCTestCase {
     @MainActor
     func testLegacyCameraActivityLinkKeepsSelectedTab() throws {
         let app = XCUIApplication()
-        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        app.launchArguments = ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"] + seenAnnouncement
         app.launch()
 
         let settings = app.tabBars.buttons["Settings"]
@@ -66,12 +69,19 @@ final class ConsoleNavigationTests: XCTestCase {
     @MainActor
     func testSettingsSubpagesShowDiagnosticsAndBundledLicenses() {
         let app = XCUIApplication()
-        app.launchArguments = ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+        app.launchArguments = ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"] + seenAnnouncement
         app.launch()
 
         let settings = app.tabBars.buttons["设置"]
         XCTAssertTrue(settings.waitForExistence(timeout: 8))
         settings.tap()
+
+        app.buttons["settings.permissions"].tap()
+        XCTAssertTrue(app.navigationBars["权限检查"].waitForExistence(timeout: 5))
+        for identifier in ["permissions.bluetooth", "permissions.localNetwork", "permissions.location", "permissions.photos"] {
+            XCTAssertTrue(app.descendants(matching: .any)[identifier].firstMatch.exists, identifier)
+        }
+        app.navigationBars["权限检查"].buttons.firstMatch.tap()
 
         app.buttons["settings.advanced"].tap()
         XCTAssertTrue(app.navigationBars["高级设置"].waitForExistence(timeout: 5))
@@ -119,7 +129,7 @@ final class ConsoleNavigationTests: XCTestCase {
     @MainActor
     func testOfflineConsoleExposesModesAndMemoryWithoutSendingCommands() {
         let app = XCUIApplication()
-        app.launchArguments = ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+        app.launchArguments = ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"] + seenAnnouncement
         app.launch()
         let entry = app.tabBars.buttons["拍摄"]
         XCTAssertTrue(entry.waitForExistence(timeout: 8))
@@ -158,7 +168,7 @@ final class ConsoleNavigationTests: XCTestCase {
         device.orientation = .portrait
         defer { device.orientation = .portrait }
         let app = XCUIApplication()
-        app.launchArguments = ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+        app.launchArguments = ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"] + seenAnnouncement
         app.launch()
         let entry = app.tabBars.buttons["拍摄"]
         XCTAssertTrue(entry.waitForExistence(timeout: 8))
@@ -201,5 +211,37 @@ final class ConsoleNavigationTests: XCTestCase {
         close.tap()
         XCTAssertTrue(expand.waitForExistence(timeout: 5))
         XCTAssertTrue(sidebar.waitForExistence(timeout: 5))
+    }
+
+    @MainActor
+    func testLaunchAnnouncementIsShownOnceAndCanBeReopenedInSettings() {
+        let app = XCUIApplication()
+        let chinese = ["-AppleLanguages", "(zh-Hans)", "-AppleLocale", "zh_CN"]
+        app.launchArguments = chinese + ["-news.lastShownID", "previous-announcement"]
+        app.launch()
+
+        assertAnnouncement(in: app)
+        app.buttons["news.done"].tap()
+        app.terminate()
+
+        app.launchArguments = chinese
+        app.launch()
+        let settings = app.tabBars.buttons["设置"]
+        XCTAssertTrue(settings.waitForExistence(timeout: 8))
+        XCTAssertFalse(app.staticTexts["news.title"].exists)
+        settings.tap()
+        app.buttons["settings.news.button"].tap()
+        assertAnnouncement(in: app)
+    }
+
+    @MainActor
+    private func assertAnnouncement(in app: XCUIApplication) {
+        XCTAssertTrue(app.staticTexts["news.title"].waitForExistence(timeout: 8))
+        for excerpt in ["使用开源逆向的非官方实现", "可能不稳定，连拍会中断", "不会泄露你的隐私"] {
+            let match = app.descendants(matching: .any).containing(
+                NSPredicate(format: "label CONTAINS %@", excerpt)
+            ).firstMatch
+            XCTAssertTrue(match.waitForExistence(timeout: 2), excerpt)
+        }
     }
 }

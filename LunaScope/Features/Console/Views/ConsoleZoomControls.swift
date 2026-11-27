@@ -2,7 +2,7 @@ import Foundation
 import OpenCineCore
 import SwiftUI
 
-/// 取景下方的变焦条：预设等宽排列，滑块位置跟手指。落点精确到 0.1。
+/// 取景下方的变焦条：预设等宽排列，滑块位置跟手指。落点精确到 0.1，预设两侧 ±0.2 的手指路程更宽。
 struct ConsoleZoomControls: View {
     /// 横屏布局按这个高度给变焦留空。
     static let barHeight: CGFloat = 80
@@ -74,12 +74,12 @@ struct ConsoleZoomControls: View {
                 .onChanged { value in
                     guard enabled else { return }
                     let position = (Double(value.location.x) - inset) / span
-                    follow(scale.factor(at: position, snap: 18 / span), preview: true)
+                    follow(scale.factor(at: position, snap: Self.tapSnap(value) / span), preview: true)
                 }
                 .onEnded { value in
                     guard enabled else { return }
                     let position = (Double(value.location.x) - inset) / span
-                    let factor = scale.factor(at: position, snap: 18 / span)
+                    let factor = scale.factor(at: position, snap: Self.tapSnap(value) / span)
                     drag = Drag(factor: factor, lastSend: drag?.lastSend)
                     camera.setZoom(factor)
                     drag = nil
@@ -114,6 +114,23 @@ struct ConsoleZoomControls: View {
             }
         }
         .accessibilityIdentifier("console.zoom.fine")
+        .sensoryFeedback(trigger: drag?.factor) { previous, next in
+            guard let next, next != previous else { return nil }
+            return Self.feedback(for: next, stops: limits.stops)
+        }
+    }
+
+    /// 点按时吸到附近预设的半径；手指一拖开就不再吸附，±0.1、±0.2 才不会被吸走。
+    private static func tapSnap(_ value: DragGesture.Value) -> Double {
+        hypot(value.translation.width, value.translation.height) < 6 ? 18 : 0
+    }
+
+    /// 预设点给明确一击，两侧 0.1 和 0.2 各轻震一下。
+    private static func feedback(for factor: Double, stops: [Double]) -> SensoryFeedback? {
+        guard let delta = stops.map({ abs($0 - factor) }).min() else { return nil }
+        if delta < tenth / 2 { return .impact(weight: .medium, intensity: 1) }
+        if delta < 0.25 { return .selection }
+        return nil
     }
 
     /// 数轴一格是 0.1。
@@ -145,7 +162,8 @@ struct ConsoleZoomControls: View {
         var lastSend: ContinuousClock.Instant?
     }
 
-    /// 预设等距铺满整条；连续倍数按 0.1 落在相邻预设之间。
+    /// 预设等距铺满整条，位置不变。相邻预设之间，两端靠近预设的一小段占更宽的手指路程，
+    /// 方便停在 ±0.1、±0.2；中间的倍数压窄，仍可拖过。
     private struct Scale {
         let stops: [Double]
         let anchors: [Double]
@@ -167,33 +185,52 @@ struct ConsoleZoomControls: View {
         func position(of factor: Double) -> Double {
             guard anchors.count > 1, factor > start else { return 0 }
             guard let upper = anchors.firstIndex(where: { $0 >= factor }) else { return 1 }
-            let fraction = (factor - anchors[upper - 1]) / (anchors[upper] - anchors[upper - 1])
-            return (Double(upper - 1) + fraction) / Double(anchors.count - 1)
+            let lower = anchors[upper - 1]
+            let knots = Self.knots(span: anchors[upper] - lower, widen: continuous)
+            let travel = Self.map(factor - lower, from: knots.offsets, to: knots.travel)
+            return (Double(upper - 1) + travel) / Double(anchors.count - 1)
         }
 
-        /// `snap` 是相对整条宽度的吸附半径，手指靠近预设时落在该档。
-        func factor(at position: Double, snap: Double) -> Double {
+        /// `snap` 是相对整条宽度的吸附半径，只在点按时传入。
+        func factor(at position: Double, snap: Double = 0) -> Double {
             guard anchors.count > 1 else { return start }
             let unit = min(1, max(0, position))
             if !continuous {
                 let index = Int((unit * Double(anchors.count - 1)).rounded())
                 return anchors[min(anchors.count - 1, max(0, index))]
             }
-            if let stop = stops.min(by: { abs(self.position(of: $0) - unit) < abs(self.position(of: $1) - unit) }),
+            if snap > 0,
+               let stop = stops.min(by: { abs(self.position(of: $0) - unit) < abs(self.position(of: $1) - unit) }),
                abs(self.position(of: stop) - unit) <= snap {
                 return stop
             }
             let index = unit * Double(anchors.count - 1)
             let lower = min(Int(index), anchors.count - 2)
-            let factor = anchors[lower] + (anchors[lower + 1] - anchors[lower]) * (index - Double(lower))
-            return tenth(factor)
+            let knots = Self.knots(span: anchors[lower + 1] - anchors[lower], widen: true)
+            return tenth(anchors[lower] + Self.map(index - Double(lower), from: knots.travel, to: knots.offsets))
         }
 
         func adjusted(_ zoom: Double?, by offset: Double) -> Double {
             let position = position(of: zoom ?? start)
-            if !continuous { return factor(at: position + offset / Double(max(1, anchors.count - 1)), snap: 0) }
-            let current = factor(at: position, snap: 0)
+            if !continuous { return factor(at: position + offset / Double(max(1, anchors.count - 1))) }
+            let current = factor(at: position)
             return tenth(current + offset * ConsoleZoomControls.tenth)
+        }
+
+        /// 一段相邻预设之内，倍数偏移和手指路程（0...1）的对应点。
+        /// 两端各 0.25 占三分之一路程，±0.1、±0.2 才停得住；整段太短或是离散档位时保持线性。
+        private static func knots(span: Double, widen: Bool) -> (offsets: [Double], travel: [Double]) {
+            let near = 0.25
+            guard widen, span > near * 3 else { return ([0, span], [0, 1]) }
+            return ([0, near, span - near, span], [0, 1.0 / 3, 2.0 / 3, 1])
+        }
+
+        /// 按对应点分段线性换算，超出两端时取端点。
+        private static func map(_ value: Double, from: [Double], to: [Double]) -> Double {
+            guard let upper = from.firstIndex(where: { $0 >= value }) else { return to[to.count - 1] }
+            guard upper > 0, from[upper] > from[upper - 1] else { return to[upper] }
+            let fraction = (value - from[upper - 1]) / (from[upper] - from[upper - 1])
+            return to[upper - 1] + (to[upper] - to[upper - 1]) * fraction
         }
 
         /// 连续落点取最近的 0.1，并夹在允许范围内。

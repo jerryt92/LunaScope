@@ -79,20 +79,31 @@ private enum ExposureParameter: String, CaseIterable, Identifiable {
         case .bias: return camera.parameters?.exposureBiasTenths != nil
         case .whiteBalance: return camera.canSet(.whiteBalance)
         case .metering: return camera.parameters?.faceMetering != nil
-        case .focus: return camera.parameters?.autofocus != nil && camera.cameraProfile?.focusChoices.isEmpty == false
+        case .focus: return camera.parameters?.autofocus != nil && !camera.focusChoices.isEmpty
         }
     }
+}
+
+/// 专业页当前编辑的是固定曝光项，或 JSON 声明的画面项。
+private enum SheetSelection: Hashable {
+    case parameter(ExposureParameter)
+    case image(String)
 }
 
 private struct ExposureSheet<CaptureControl: View>: View {
     let camera: CameraController
     let captureControl: () -> CaptureControl
     @Environment(\.dismiss) private var dismiss
-    @State private var professionalParameter: ExposureParameter?
+    @State private var selection: SheetSelection?
 
-    private var activeParameter: ExposureParameter {
-        if camera.exposureControlMode != .professional { return .bias }
-        return professionalParameter ?? .bias
+    private var active: SheetSelection {
+        if camera.exposureControlMode != .professional { return .parameter(.bias) }
+        return selection ?? .parameter(.bias)
+    }
+
+    /// 测光和对焦已在曝光项里，这里只追加 JSON 里的其余画面项。
+    private var imageControls: [ConsoleCameraProfile.ImageControl] {
+        camera.visibleImageControls().filter { $0.id != "focus" && $0.id != "metering" }
     }
 
     var body: some View {
@@ -103,9 +114,9 @@ private struct ExposureSheet<CaptureControl: View>: View {
 
                     parameterStrip
                     editor
-                        .id(activeParameter)
-                        .disabled(!activeParameter.canAdjust(on: camera))
-                        .opacity(activeParameter.canAdjust(on: camera) ? 1 : 0.55)
+                        .id(active)
+                        .disabled(!canEditActive)
+                        .opacity(canEditActive ? 1 : 0.55)
                         .background(Palette.preview, in: RoundedRectangle(cornerRadius: 14))
                         .padding(.horizontal, 16)
 
@@ -148,9 +159,17 @@ private struct ExposureSheet<CaptureControl: View>: View {
         .tint(Palette.accent)
         .presentationDetents([.height(370), .large])
         .presentationDragIndicator(.visible)
-        .onAppear {
-            professionalParameter = ExposureParameter.bias.canAdjust(on: camera) ? .bias
-                : ExposureParameter.allCases.first { $0.canAdjust(on: camera) }
+            .onChange(of: camera.parameters?.color) {
+                if case .image(let id) = selection, camera.visibleImageControl(id: id) == nil {
+                    selection = .parameter(.bias)
+                }
+            }
+            .onAppear {
+            if ExposureParameter.bias.canAdjust(on: camera) {
+                selection = .parameter(.bias)
+            } else if let parameter = ExposureParameter.allCases.first(where: { $0.canAdjust(on: camera) }) {
+                selection = .parameter(parameter)
+            }
         }
     }
 
@@ -191,14 +210,17 @@ private struct ExposureSheet<CaptureControl: View>: View {
                 ScrollView(.horizontal) {
                     HStack(spacing: 6) {
                         ForEach(ExposureParameter.allCases) { parameter in
-                            parameterButton(parameter).id(parameter)
+                            parameterButton(parameter).id(SheetSelection.parameter(parameter))
+                        }
+                        ForEach(imageControls, id: \.id) { control in
+                            imageButton(control).id(SheetSelection.image(control.id))
                         }
                     }
                     .padding(.horizontal, 16)
                 }
                 .scrollIndicators(.hidden)
-                .onChange(of: activeParameter, initial: true) {
-                    withAnimation(.snappy) { proxy.scrollTo(activeParameter) }
+                .onChange(of: active, initial: true) {
+                    withAnimation(.snappy) { proxy.scrollTo(active) }
                 }
             }
         } else {
@@ -208,18 +230,51 @@ private struct ExposureSheet<CaptureControl: View>: View {
     }
 
     private func parameterButton(_ parameter: ExposureParameter) -> some View {
-        Button { professionalParameter = parameter } label: {
+        Button { selection = .parameter(parameter) } label: {
             parameterLabel(parameter)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(parameter.title))
         .accessibilityValue(parameterValue(parameter))
-        .accessibilityAddTraits(activeParameter == parameter ? .isSelected : [])
+        .accessibilityAddTraits(active == .parameter(parameter) ? .isSelected : [])
         .accessibilityIdentifier("console.exposure.parameter.\(parameter.rawValue)")
     }
 
+    private func imageButton(_ control: ConsoleCameraProfile.ImageControl) -> some View {
+        let value = camera.parameters?.imageValue(id: control.id)
+        return Button { selection = .image(control.id) } label: {
+            imageLabel(control, value: value)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(control.title)
+        .accessibilityValue(value.map(control.choiceLabel) ?? "—")
+        .accessibilityAddTraits(active == .image(control.id) ? .isSelected : [])
+        .accessibilityIdentifier("console.exposure.image.\(control.id)")
+    }
+
+    private func imageLabel(_ control: ConsoleCameraProfile.ImageControl, value: UInt64?) -> some View {
+        let isSelected = active == .image(control.id)
+        return VStack(spacing: 4) {
+            Label(control.title, systemImage: control.symbol)
+                .font(.caption.weight(.semibold))
+                .fixedSize(horizontal: true, vertical: false)
+            Text(value.map(control.choiceLabel) ?? "—")
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(isSelected ? Palette.accent : Palette.secondary)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .frame(minWidth: 68, minHeight: 48)
+        .background(isSelected ? Palette.field : .clear, in: RoundedRectangle(cornerRadius: 9))
+        .overlay {
+            RoundedRectangle(cornerRadius: 9)
+                .strokeBorder(isSelected ? Palette.accent.opacity(0.65) : .clear)
+        }
+    }
+
     private func parameterLabel(_ parameter: ExposureParameter) -> some View {
-        let isSelected = activeParameter == parameter
+        let isSelected = active == .parameter(parameter)
         return VStack(spacing: 4) {
             Label(parameter.title, systemImage: parameter.symbol)
                 .font(.caption.weight(.semibold))
@@ -240,38 +295,44 @@ private struct ExposureSheet<CaptureControl: View>: View {
     }
 
     @ViewBuilder private var editor: some View {
-        switch activeParameter {
-        case .bias:
+        switch active {
+        case .image(let id):
+            if let control = camera.visibleImageControl(id: id) {
+                let current = camera.parameters?.imageValue(id: control.id)
+                optionButtons(camera.imageChoiceValues(for: control), current: current,
+                              label: control.choiceLabel) { camera.setImageControl(control, value: $0) }
+            }
+        case .parameter(.bias):
             let values = ConsoleParameters.exposureBiasChoices
             ruler(values, current: camera.parameters?.exposureBiasTenths,
                   label: ConsoleParameters.exposureBiasLabel, apply: camera.setExposureBias)
-        case .shutter:
+        case .parameter(.shutter):
             ruler([nil] + camera.shutterChoices.map(Optional.some), current: Optional(shutter),
                   label: shutterLabel, apply: camera.setExposureShutter)
-        case .iso:
+        case .parameter(.iso):
             let profile = camera.cameraProfile?.exposure
             let choices = [.auto] + (profile?.iso ?? []).map(ISOChoice.fixed) + (profile?.isoMax ?? []).map(ISOChoice.max)
             ruler(choices, current: camera.parameters?.exposure.map { ISOChoice($0) },
                   label: isoLabel, apply: applyISO)
-        case .whiteBalance:
+        case .parameter(.whiteBalance):
             ruler([nil] + whiteBalanceChoices.map(Optional.some), current: whiteBalance,
                   label: whiteBalanceLabel) { kelvin in
                 camera.set(.whiteBalance(kelvin.map { .kelvin($0) } ?? .auto))
             }
-        case .metering:
+        case .parameter(.metering):
             optionButtons([false, true], current: camera.parameters?.faceMetering,
                           label: ConsoleParameters.meteringLabel, apply: camera.setMetering)
-        case .focus:
-            optionButtons(camera.cameraProfile?.focusChoices ?? [], current: focus,
+        case .parameter(.focus):
+            optionButtons(camera.focusChoices, current: focus,
                           label: { $0.label }, apply: camera.setNativeFocus)
         }
     }
 
     private func ruler<Value: Hashable>(_ choices: [Value], current: Value?,
                                         label: (Value) -> String, apply: @escaping (Value) -> Void) -> some View {
-        ExposureRuler(title: activeParameter.title, labels: choices.map(label),
+        ExposureRuler(title: activeTitle, labels: choices.map(label),
                       selection: current.flatMap { choices.firstIndex(of: $0) },
-                      currentLabel: parameterValue(activeParameter)) { index in
+                      currentLabel: activeValue) { index in
             guard choices.indices.contains(index) else { return }
             apply(choices[index])
         }
@@ -363,24 +424,77 @@ private struct ExposureSheet<CaptureControl: View>: View {
         }
     }
 
+    private var activeTitle: LocalizedStringKey {
+        switch active {
+        case .parameter(let parameter): parameter.title
+        case .image(let id): LocalizedStringKey(camera.visibleImageControl(id: id)?.title ?? "")
+        }
+    }
+
+    private var activeValue: String {
+        switch active {
+        case .parameter(let parameter): return parameterValue(parameter)
+        case .image(let id):
+            guard let control = camera.visibleImageControl(id: id) else { return "—" }
+            return camera.parameters?.imageValue(id: id).map(control.choiceLabel) ?? "—"
+        }
+    }
+
+    private var canEditActive: Bool {
+        switch active {
+        case .parameter(let parameter): parameter.canAdjust(on: camera)
+        case .image(let id):
+            camera.canEditShootingSettings && camera.parameters?.imageValue(id: id) != nil
+                && camera.visibleImageControl(id: id) != nil
+        }
+    }
+
+    /// 当前项是否偏离可恢复的默认值。画面项的默认值来自机型 JSON。
     private var canReset: Bool {
-        guard activeParameter.canAdjust(on: camera) else { return false }
-        switch activeParameter {
-        case .bias: return camera.parameters?.exposureBiasTenths != 0
-        case .shutter: return shutter != nil
-        case .iso: return ISOChoice(camera.parameters?.exposure) != .auto
-        case .whiteBalance: return whiteBalance.flatMap { $0 } != nil
-        case .metering, .focus: return false
+        switch active {
+        case .parameter(let parameter):
+            guard parameter.canAdjust(on: camera) else { return false }
+            switch parameter {
+            case .bias: return camera.parameters?.exposureBiasTenths != 0
+            case .shutter: return shutter != nil
+            case .iso: return ISOChoice(camera.parameters?.exposure) != .auto
+            case .whiteBalance: return whiteBalance.flatMap { $0 } != nil
+            case .metering:
+                guard let control = camera.visibleImageControl(id: "metering"),
+                      let current = camera.parameters?.faceMetering else { return false }
+                return (current ? 1 : 0) != control.defaultValue
+            case .focus:
+                guard let control = camera.visibleImageControl(id: "focus"),
+                      let current = camera.parameters?.autofocus else { return false }
+                return current != control.defaultValue
+            }
+        case .image(let id):
+            guard let control = camera.visibleImageControl(id: id),
+                  let current = camera.parameters?.imageValue(id: id) else { return false }
+            let choices = camera.imageChoiceValues(for: control)
+            let restore = choices.contains(control.defaultValue) ? control.defaultValue : nil
+            return restore != nil && current != restore
         }
     }
 
     private func resetParameter() {
-        switch activeParameter {
-        case .bias: camera.setExposureBias(0)
-        case .shutter: camera.setExposureShutter(nil)
-        case .iso: applyISO(.auto)
-        case .whiteBalance: camera.set(.whiteBalance(.auto))
-        case .metering, .focus: break
+        switch active {
+        case .parameter(.bias): camera.setExposureBias(0)
+        case .parameter(.shutter): camera.setExposureShutter(nil)
+        case .parameter(.iso): applyISO(.auto)
+        case .parameter(.whiteBalance): camera.set(.whiteBalance(.auto))
+        case .parameter(.focus):
+            if let control = camera.visibleImageControl(id: "focus") {
+                camera.restoreImageControl(control)
+            }
+        case .parameter(.metering):
+            if let control = camera.visibleImageControl(id: "metering") {
+                camera.restoreImageControl(control)
+            }
+        case .image(let id):
+            if let control = camera.visibleImageControl(id: id) {
+                camera.restoreImageControl(control)
+            }
         }
     }
 }

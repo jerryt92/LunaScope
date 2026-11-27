@@ -153,7 +153,7 @@ struct ConsoleExposure: Codable, Equatable {
 
 /// 一组拍摄模式的参数。回读和界面选择分别保存，合并时只覆盖有值的字段。
 struct ConsoleParameters: Codable, Equatable {
-    static let optionTypes: [UInt32] = [7, 20, 21, 24, 25, 31, 35, 39, 40, 46, 53, 93, 100]
+    static let optionTypes: [UInt32] = [3, 4, 6, 7, 20, 21, 24, 25, 31, 35, 39, 40, 46, 53, 93, 100, 101]
     static let exposureBiasChoices = (-12...12).map { Int32((Double($0) * 10 / 3).rounded()) }
 
     let mode: ConsoleCaptureMode
@@ -166,6 +166,10 @@ struct ConsoleParameters: Codable, Equatable {
     var autofocus: UInt64?
     var zoom: Double?
     var color: UInt64?
+    var breathingCompensation: UInt64?
+    var contrast: UInt64?
+    var saturation: UInt64?
+    var sharpness: UInt64?
     var rawCapture: Bool?
     var livePhoto: Bool?
     /// App 侧连续拍照；相机仍是单张照片模式，不进机身回读。
@@ -186,6 +190,10 @@ struct ConsoleParameters: Codable, Equatable {
         autofocus = changes.autofocus ?? autofocus
         zoom = changes.zoom ?? zoom
         color = changes.color ?? color
+        breathingCompensation = changes.breathingCompensation ?? breathingCompensation
+        contrast = changes.contrast ?? contrast
+        saturation = changes.saturation ?? saturation
+        sharpness = changes.sharpness ?? sharpness
         rawCapture = changes.rawCapture ?? rawCapture
         livePhoto = changes.livePhoto ?? livePhoto
         continuousPhoto = changes.continuousPhoto ?? continuousPhoto
@@ -212,7 +220,11 @@ struct ConsoleParameters: Codable, Equatable {
         if let enabled = value.faceMetering { faceMetering = enabled }
         if let autofocus = value.afMode { self.autofocus = autofocus }
         if let zoom = value.zoom, zoom.isFinite, zoom >= 1 { self.zoom = zoom }
-        if !photo, let color = value.colorMode { self.color = color }
+        if let color = value.colorMode { self.color = color }
+        if let breathingCompensation = value.breathingCompensation { self.breathingCompensation = breathingCompensation }
+        if let contrast = value.contrast { self.contrast = contrast }
+        if let saturation = value.saturation { self.saturation = saturation }
+        if let sharpness = value.sharpness { self.sharpness = sharpness }
     }
 
     /// 只解析请求包含照片格式的回复。成功回读的照片尺寸或选项回显才能证明省略的 RAW 为默认 JPG。
@@ -274,7 +286,15 @@ struct ConsoleParameters: Codable, Equatable {
             || (livePhoto == true && !profile.allowsLivePhoto(format: targetFormat)) {
             copy.livePhoto = nil
         }
-        if let autofocus, !profile.focusChoices.contains(where: { $0.rawValue == autofocus }) { copy.autofocus = nil }
+        for id in Self.imageControlIDs {
+            guard copy.imageValue(id: id) != nil else { continue }
+            guard let control = profile.imageControls(for: native).first(where: { $0.id == id }),
+                  let value = copy.imageValue(id: id),
+                  profile.choiceValues(for: control, format: targetFormat, mode: native).contains(value) else {
+                copy.setImageValue(id: id, nil)
+                continue
+            }
+        }
         if let kelvin = whiteBalance, !profile.whiteBalance.allows(kelvin) {
             copy.whiteBalance = nil
         }
@@ -284,9 +304,6 @@ struct ConsoleParameters: Codable, Equatable {
             }
             if limits?.allows(ConsoleZoom.quantize(zoom)) == true { copy.zoom = ConsoleZoom.quantize(zoom) }
             else { copy.zoom = nil }
-        }
-        if let color, native.isPhoto || !profile.colorChoices(for: targetFormat).contains(where: { $0.rawValue == color }) {
-            copy.color = nil
         }
         // 连拍是控制台调度，仅照片模式可恢复；可与实况同时保存。
         if native == .photo, continuousPhoto == true {
@@ -313,6 +330,10 @@ struct ConsoleParameters: Codable, Equatable {
         whiteBalance = settings.whiteBalance
         faceMetering = settings.faceMetering
         autofocus = settings.autofocus
+        breathingCompensation = settings.breathingCompensation
+        contrast = settings.contrast
+        saturation = settings.saturation
+        sharpness = settings.sharpness
     }
 
     func isConfirmed(by current: Self) -> Bool {
@@ -325,6 +346,10 @@ struct ConsoleParameters: Codable, Equatable {
             && (exposureControlMode == .basic || whiteBalance == nil || whiteBalance == current.whiteBalance)
             && (autofocus == nil || autofocus == current.autofocus)
             && (color == nil || color == current.color)
+            && (breathingCompensation == nil || breathingCompensation == current.breathingCompensation)
+            && (contrast == nil || contrast == current.contrast)
+            && (saturation == nil || saturation == current.saturation)
+            && (sharpness == nil || sharpness == current.sharpness)
             && (rawCapture == nil || rawCapture == current.rawCapture)
             && (livePhoto == nil || livePhoto == current.livePhoto)
             && (zoom.map { expected in current.zoom.map { abs($0 - expected) <= 0.03 } == true } ?? true)
@@ -332,6 +357,7 @@ struct ConsoleParameters: Codable, Equatable {
 
     var hasValues: Bool {
         format != nil || exposure != nil || whiteBalance != nil || autofocus != nil || zoom != nil || color != nil
+            || breathingCompensation != nil || contrast != nil || saturation != nil || sharpness != nil
             || exposureControlMode != nil || exposureBiasTenths != nil || faceMetering != nil
             || rawCapture != nil || livePhoto != nil
             || continuousPhoto == true
@@ -369,11 +395,18 @@ struct ConsoleParameters: Codable, Equatable {
                 parts.append("\(whiteBalance) K")
             }
         }
-        if let autofocus, let focus = LunaAFMode(rawValue: autofocus), focus != .productShowcase {
+        if let autofocus, let focus = LunaAFMode(rawValue: autofocus) {
             parts.append(focus.label)
         }
-        if let color, let mode = LunaColorMode(rawValue: color) {
+        if let color, let mode = LunaColorMode(rawValue: color),
+           profile?.imageControls(for: native).contains(where: { $0.id == "color" }) == true {
             parts.append(Self.colorLabel(mode))
+        }
+        if let profile {
+            for control in profile.imageControls(for: native) where !["focus", "color"].contains(control.id) {
+                guard let value = imageValue(id: control.id), value != control.defaultValue else { continue }
+                parts.append("\(control.title) \(control.choiceLabel(value))")
+            }
         }
         if let zoom {
             let value = zoom.formatted(.number.precision(.fractionLength(0...2)))
@@ -432,5 +465,36 @@ struct ConsoleParameters: Codable, Equatable {
 
     private static func isEmptyDefault(_ value: LunaExposure) -> Bool {
         value.program == 0 && value.iso == 0 && value.shutterSeconds == 0
+    }
+
+    /// 会写入机身、并按 JSON 决定能否恢复的画面项。
+    private static let imageControlIDs = ["metering", "focus", "color", "breathingCompensation", "contrast", "saturation", "sharpness"]
+
+    /// 按画面项标识读取已保存的线值。
+    func imageValue(id: String) -> UInt64? {
+        switch id {
+        case "metering": faceMetering.map { $0 ? 1 : 0 }
+        case "focus": autofocus
+        case "color": color
+        case "breathingCompensation": breathingCompensation
+        case "contrast": contrast
+        case "saturation": saturation
+        case "sharpness": sharpness
+        default: nil
+        }
+    }
+
+    /// 按画面项标识写入线值。nil 表示这项不参与恢复。
+    mutating func setImageValue(id: String, _ value: UInt64?) {
+        switch id {
+        case "metering": faceMetering = value.map { $0 != 0 }
+        case "focus": autofocus = value
+        case "color": color = value
+        case "breathingCompensation": breathingCompensation = value
+        case "contrast": contrast = value
+        case "saturation": saturation = value
+        case "sharpness": sharpness = value
+        default: break
+        }
     }
 }

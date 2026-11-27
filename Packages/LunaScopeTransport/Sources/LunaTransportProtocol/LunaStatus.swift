@@ -63,6 +63,8 @@ public struct LunaPhotographySettings: Equatable, Sendable {
     /// Option types listed in reply field 1 (for SET replies: the applied types).
     public var types: [UInt32] = []
     public var functionMode: UInt32?
+    public var contrast: UInt64?                // 3: 整组 SET 中性值 3
+    public var saturation: UInt64?              // 4: 整组 SET 中性值 3
     public var sharpness: UInt64?               // 6: Observed 1 Medium, 2 High
     public var exposureBiasTenths: Int32?       // 7: sint32; Observed wire 6 = +0.3 EV
     public var whiteBalancePreset: UInt64?      // 13: Source-backed, 0 = auto
@@ -88,6 +90,7 @@ public struct LunaPhotographySettings: Equatable, Sendable {
     /// 99: Observed (seconds, card location) pairs, e.g. (3001 s, 2 inner), (0, 3 SD).
     public var remainingRecordTime: [LunaRemainingTime] = []
     public var iq3AMode: UInt64?                // 100: Observed 1 NORMAL, 2 PRO
+    public var breathingCompensation: UInt64?   // 101: 0 关，1 开
     public var filterStrength: UInt64?          // 104: Observed 3
 
     public var exposureBiasStops: Double? { exposureBiasTenths.map { Double($0) / 10 } }
@@ -106,11 +109,16 @@ public struct LunaPhotographySettings: Equatable, Sendable {
         // Proto3 omits zero and false even when the response lists those options.
         exposureBiasTenths = types.contains(7) ? 0 : nil
         faceMetering = types.contains(46) ? false : nil
+        // 锐度和呼吸补偿的 0 是有效档，proto3 省略时按 0。
+        sharpness = types.contains(6) ? 0 : nil
+        breathingCompensation = types.contains(101) ? 0 : nil
         guard let nested = try outer.optionalBytes(2) else { return }
         let o = try ProtoMessage(nested)
         func u(_ n: Int) throws -> UInt64? { o.fields.contains { $0.number == n } ? try o.unsigned(n) : nil }
         func b(_ n: Int) throws -> Bool? { try u(n).map { $0 != 0 } }
-        sharpness = try u(6)
+        contrast = try u(3)
+        saturation = try u(4)
+        sharpness = try u(6) ?? sharpness
         exposureBiasTenths = try u(7).map(ProtoMessage.unzigzag32) ?? exposureBiasTenths
         whiteBalancePreset = try u(13)
         filter = try u(18)
@@ -144,6 +152,7 @@ public struct LunaPhotographySettings: Equatable, Sendable {
                 seconds: try entry.unsigned(1, default: 0), location: try entry.unsigned(2, default: 0)))
         }
         iq3AMode = try u(100)
+        breathingCompensation = try u(101) ?? breathingCompensation
         filterStrength = try u(104)
     }
 }

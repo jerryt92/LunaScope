@@ -406,6 +406,24 @@
 
 "console.settings.colorVivid" = "Vivid";
 
+"console.settings.breathingCompensation" = "Breathing compensation";
+
+"console.settings.contrast" = "Contrast";
+
+"console.settings.saturation" = "Saturation";
+
+"console.settings.sharpness" = "Sharpness";
+
+"console.settings.sharpnessLow" = "Low";
+
+"console.settings.sharpnessMedium" = "Medium";
+
+"console.settings.sharpnessHigh" = "High";
+
+"console.settings.off" = "Off";
+
+"console.settings.on" = "On";
+
 "console.settings.continuousAF" = "Continuous AF";
 
 "console.settings.exposureControls" = "Shooting Parameters";
@@ -464,9 +482,67 @@
 
 "feature.console.title" = "Shoot";
 
+"news.done" = "Got It";
+
+"news.privacy.detail" = "Live view, photos, videos, and shooting settings stay between this device and the connected camera. LunaScope does not upload them, and it does not sell or share your private data. Diagnostic logs contain only app events and device information, and they leave the device only when you choose to share them.";
+
+"news.privacy.title" = "Your photos stay private";
+
+"news.sdk.detail" = "LunaScope connects to Insta360 Luna series cameras through the open-source OpenCine project. Connection, shooting controls, and album access come from reverse-engineered camera protocols. This is not an official Insta360 SDK, and Insta360 does not provide or endorse it.";
+
+"news.sdk.title" = "An unofficial, reverse-engineered connection";
+
+"news.stability.detail" = "Firmware changes, the wireless signal, or the system limiting background activity can interrupt the connection and live view. Continuous shooting can also stop partway through. Try a test shot before an important session, and rely on the files stored in the camera.";
+
+"news.stability.title" = "The connection can drop mid-burst";
+
+"news.title" = "Before you use LunaScope";
+
+"permissions.action.allow" = "Allow";
+
 "permissions.action.settings" = "Open Settings";
 
+"permissions.bluetooth.detail" = "Finds nearby Insta360 Luna series cameras and completes pairing.";
+
+"permissions.bluetooth.title" = "Bluetooth";
+
+"permissions.check.title" = "Permissions";
+
+"permissions.localNetwork.detail" = "Receives live view, sends controls, and reads original files on the camera network. iOS does not report this status until you tap Allow.";
+
+"permissions.localNetwork.title" = "Local Network";
+
+"permissions.localNetwork.waiting" = "Waiting for the system";
+
+"permissions.location.detail" = "Reads the current Wi-Fi name to confirm this iPhone or iPad has joined the camera network. Your location is not recorded.";
+
+"permissions.location.title" = "Location";
+
+"permissions.networkAccess.footer" = "If wireless data is restricted for this app, joining the camera network can also fail.";
+
+"permissions.networkAccess.title" = "Network Access";
+
+"permissions.photos.detail" = "Saves the photos and videos you select from the camera into the LunaScope album in Photos.";
+
+"permissions.photos.title" = "Photos";
+
+"permissions.section.title" = "Connection and Saving";
+
+"permissions.status.allowed" = "Allowed";
+
+"permissions.status.denied" = "Denied";
+
+"permissions.status.notDetermined" = "Not Allowed Yet";
+
+"permissions.status.restricted" = "Restricted";
+
+"permissions.status.unchecked" = "Not Checked";
+
 "permissions.status.unknown" = "Unavailable";
+
+"permissions.wirelessData.detail" = "A wireless data restriction can block access to the camera network.";
+
+"permissions.wirelessData.title" = "Wireless Data";
 
 "settings.about.developerEmail" = "Developer Email";
 
@@ -527,6 +603,8 @@
 "settings.licenses.usage.kcp" = "Bundled with the camera transport module to provide reliable UDP delivery for the detachable screen’s control channel.";
 
 "settings.licenses.usage.openCine" = "LunaScope uses OpenCine for camera connections, shooting controls, live preview, and album thumbnails. LunaScopeTransport adapts its camera integration for Insta360 Luna series cameras.";
+
+"settings.news.title" = "View Statement";
 
 "tab.album" = "Album";
 
