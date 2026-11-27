@@ -60,9 +60,16 @@ struct ConsoleGimbalCommands {
             let request = try LunaProtocol.gimbalSetAngle(pitch: Float(position.pitch), yaw: Float(position.yaw))
             let reply = try await control(request, timeout: .seconds(3))
             guard !reply.isEmpty else { throw ControlError.cameraRefused }
-            if try await waitUntilArrived(position) == false {
-                return .axisLimit
+            // SET_ANGLE 会占住云台；边缘点顶死后摇杆无效，结束时必须松开。
+            let arrived: Bool
+            do {
+                arrived = try await waitUntilArrived(position)
+            } catch {
+                await releaseAngleHold()
+                throw error
             }
+            await releaseAngleHold()
+            if !arrived { return .axisLimit }
         }
         return .arrived
     }
@@ -98,6 +105,12 @@ struct ConsoleGimbalCommands {
             if limited, leftTheStop || angle.grf == 0 { return false }
         } while clock.now < deadline
         throw ControlError.gimbalPosition
+    }
+
+    /// 结束 SET_ANGLE 对云台的占用，摇杆才能再次推动。失败不改变定位结果。
+    private func releaseAngleHold() async {
+        guard let request = try? LunaProtocol.gimbalReleaseRequest() else { return }
+        _ = try? await session.control(request, timeout: .seconds(2))
     }
 
     private func control(_ request: LunaRequest, timeout: Duration = .seconds(2)) async throws -> Data {

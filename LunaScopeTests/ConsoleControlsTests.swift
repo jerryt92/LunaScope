@@ -201,7 +201,7 @@ final class ConsoleControlsTests: XCTestCase {
         wire.angle = .init(pitch: 1, yaw: 5)
         let matched = try await commands.restore(forward, currentFlip: false)
         XCTAssertEqual(matched, .arrived)
-        XCTAssertEqual(wire.moves, [.setAngle])
+        XCTAssertEqual(wire.moves, [.setAngle, .move])
         XCTAssertTrue(forward.matchesAngles(wire.angle))
 
         // 记忆没写翻转、当前已翻转：提示不一致，不转动。
@@ -215,7 +215,7 @@ final class ConsoleControlsTests: XCTestCase {
         // 记忆没写翻转、当前正向：只归位。
         let noFlip = try await commands.restore(anglesOnly, currentFlip: false)
         XCTAssertEqual(noFlip, .arrived)
-        XCTAssertEqual(wire.moves, [.setAngle])
+        XCTAssertEqual(wire.moves, [.setAngle, .move])
     }
 
     @MainActor
@@ -756,6 +756,9 @@ private final class GimbalWire {
             angle = try .init(pitch: target.float(2), yaw: target.float(3))
             moves.append(action)
             return try ProtoMessage.integer(field: 1, value: 1)
+        case .move:
+            moves.append(action)
+            return Data()
         default:
             XCTFail("Unexpected gimbal action \(action)")
             throw LunaProtocolError.cameraRejectedRequest
