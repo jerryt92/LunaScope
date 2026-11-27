@@ -364,7 +364,7 @@ struct ConsoleMenuLabel: View {
             }
         }
         .lineLimit(1)
-        .minimumScaleFactor(0.85)
+        .minimumScaleFactor(0.7)
         .padding(.horizontal, 8)
         .padding(.vertical, 3)
         .frame(maxWidth: .infinity, minHeight: Self.minHeight, alignment: .leading)

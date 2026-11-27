@@ -204,6 +204,8 @@ struct ConsoleView: View {
         static let maximumDockWidth: CGFloat = 560
         static let spacing: CGFloat = 10
         static let padding: CGFloat = 12
+        /// 参数面板和云台面板的内边距，算横屏是否并排时要扣掉。
+        static let panelInset: CGFloat = 12
         static let joystick: CGFloat = 120
         static let buttonSize: CGFloat = 44
         /// 云台回中、翻转、模式和位置按钮。
@@ -221,17 +223,17 @@ struct ConsoleView: View {
     }
 
     private func landscapeSidebar(width: CGFloat) -> some View {
-        let compact = width < Layout.compactSidebarWidth
+        let compact = landscapeDockIsCompact(width: width)
         return ViewThatFits(in: .vertical) {
             VStack(spacing: Layout.spacing) {
-                parametersPanel(width: width)
+                parametersPanel(width: width, columns: 3)
                 Spacer(minLength: 0)
-                shootingDock(compact: compact)
+                shootingDock(width: width, compact: compact)
             }
             ScrollView(.vertical) {
                 VStack(spacing: Layout.spacing) {
-                    parametersPanel(width: width)
-                    shootingDock(compact: compact)
+                    parametersPanel(width: width, columns: 3)
+                    shootingDock(width: width, compact: compact)
                 }
             }
             .scrollBounceBehavior(.basedOnSize)
@@ -551,7 +553,7 @@ struct ConsoleView: View {
         }
     }
 
-    private func shootingDock(compact: Bool = false) -> some View {
+    private func shootingDock(width: CGFloat? = nil, compact: Bool = false) -> some View {
         let showsGimbal = camera.cameraProfile?.gimbalChoices.isEmpty != true
         return VStack(alignment: .leading, spacing: Layout.spacing) {
             Group {
@@ -583,6 +585,7 @@ struct ConsoleView: View {
             }
         }
         .panelStyle()
+        .frame(maxWidth: width, alignment: .leading)
     }
 
     private var joystick: some View {
@@ -674,15 +677,26 @@ struct ConsoleView: View {
         return slots
     }
 
-    /// 按最小宽度换行，同行等宽；不再为了压进两行把每一项挤窄。
-    private func parametersPanel(width: CGFloat) -> some View {
+    /// 横屏侧栏放不下摇杆和快门并排时改为上下排列，避免面板被侧栏裁掉左右边框。
+    private func landscapeDockIsCompact(width: CGFloat) -> Bool {
+        if width < Layout.compactSidebarWidth || typeSize.isAccessibilitySize { return true }
+        let showsGimbal = camera.cameraProfile?.gimbalChoices.isEmpty != true
+        var row = Layout.shutterWidth
+        if camera.continuousPhoto { row += Layout.spacing + Layout.continuousWidth }
+        if showsGimbal { row += Layout.spacing + Layout.joystick }
+        return row + Layout.panelInset * 2 > width
+    }
+
+    /// 按最小宽度换行，同行等宽。横屏可指定每行列数，把项目收窄后排进侧栏。
+    private func parametersPanel(width: CGFloat, columns: Int? = nil) -> some View {
         let slots = parameterSlots
         let inset: CGFloat = 4
         let contentWidth = max(0, width - inset * 2)
         let minWidth = typeSize.isAccessibilitySize ? ConsoleMenuLabel.minItemWidth * 1.35
             : ConsoleMenuLabel.minItemWidth
         let spacing = ConsoleMenuLabel.spacing
-        let perRow = max(1, Int(floor((contentWidth + spacing) / (minWidth + spacing))))
+        let fitted = max(1, Int(floor((contentWidth + spacing) / (minWidth + spacing))))
+        let perRow = max(1, columns ?? fitted)
         let rows = parameterRows(slots, perRow: perRow)
         return VStack(spacing: spacing) {
             ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
