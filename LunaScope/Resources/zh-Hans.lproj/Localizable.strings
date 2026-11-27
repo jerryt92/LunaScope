@@ -148,7 +148,7 @@
 
 "console.error.gimbalPosition" = "云台正在移动、角度超出范围，或相机尚未确认到位。";
 
-"console.error.gimbalRestore" = "无法恢复云台位置";
+"console.error.gimbalRestore" = "无法定位到记忆点";
 
 "console.error.gimbalSave" = "无法记忆云台位置";
 

@@ -1713,13 +1713,22 @@ final class CameraController {
             try await self.stopSubjectTracking(through: target)
             var commands = self.gimbalCommands(through: target)
             commands.atAxisLimit = { self.gimbalWasAtLimit }
-            switch try await commands.restore(position, currentFlip: self.gimbalIsFlipped) {
+            let outcome: Result<ConsoleGimbalRestoreResult, Error>
+            do {
+                outcome = .success(try await commands.restore(position, currentFlip: self.gimbalIsFlipped))
+            } catch {
+                outcome = .failure(error)
+            }
+            // 命令进行中收到的休眠通知不会触发自动唤醒，定位结束时补上，否则摇杆会一直禁用。
+            if self.gimbalSleeping { try? await self.wakeGimbalSequence(target) }
+            switch try outcome.get() {
             case .flipMismatch:
                 self.showNotice(String(localized: "console.notice.gimbalFlipMismatch"))
             case .arrived:
                 self.showNotice(String(localized: "console.notice.gimbalRestored"))
             case .axisLimit:
-                break
+                // 相机没发限位通知、靠停转判断出来时，这里是唯一的提示。
+                self.showNotice(String(localized: "console.notice.gimbalLimit"))
             }
         }
     }

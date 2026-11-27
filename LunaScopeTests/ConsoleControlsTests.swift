@@ -173,7 +173,8 @@ final class ConsoleControlsTests: XCTestCase {
         XCTAssertNil(ConsoleGimbalPosition(cameraID: camera, yaw: .nan, pitch: 0))
         let position = try XCTUnwrap(ConsoleGimbalPosition(cameraID: camera, yaw: 179.9, pitch: 12))
         XCTAssertTrue(position.matchesAngles(.init(pitch: 12.1, yaw: -179.9)))
-        XCTAssertFalse(position.matchesAngles(.init(grf: 1, pitch: 12.1, yaw: -179.9)))
+        // 只比角度：贴着行程尽头的记忆点，相机到了也可能一直回 grf = 1。
+        XCTAssertTrue(position.matchesAngles(.init(grf: 1, pitch: 12.1, yaw: -179.9)))
         XCTAssertFalse(position.matchesAngles(.init(pitch: 14, yaw: -179.9)))
     }
 
@@ -201,7 +202,7 @@ final class ConsoleControlsTests: XCTestCase {
         wire.angle = .init(pitch: 1, yaw: 5)
         let matched = try await commands.restore(forward, currentFlip: false)
         XCTAssertEqual(matched, .arrived)
-        XCTAssertEqual(wire.moves, [.setAngle, .move])
+        XCTAssertEqual(wire.moves, [.setAngle])
         XCTAssertTrue(forward.matchesAngles(wire.angle))
 
         // 记忆没写翻转、当前已翻转：提示不一致，不转动。
@@ -215,7 +216,65 @@ final class ConsoleControlsTests: XCTestCase {
         // 记忆没写翻转、当前正向：只归位。
         let noFlip = try await commands.restore(anglesOnly, currentFlip: false)
         XCTAssertEqual(noFlip, .arrived)
-        XCTAssertEqual(wire.moves, [.setAngle, .move])
+        XCTAssertEqual(wire.moves, [.setAngle])
+    }
+
+    /// 记忆点够不着：云台停在行程尽头、相机一直回 grf = 1。定位要很快结束，并把目标改到当前角度。
+    @MainActor
+    func testGimbalRestoreStopsAtTheEdgeAndClearsThePendingTarget() async throws {
+        let wire = GimbalWire()
+        wire.yawStop = 60
+        wire.angle = .init(pitch: 1, yaw: 5)
+        let commands = wire.commands()
+        let cameraID = UUID()
+        let beyond = try XCTUnwrap(ConsoleGimbalPosition(cameraID: cameraID, yaw: 100, pitch: 10))
+
+        let clock = ContinuousClock()
+        let started = clock.now
+        let result = try await commands.restore(beyond, currentFlip: nil)
+        XCTAssertEqual(result, .axisLimit)
+        XCTAssertLessThan(clock.now - started, .seconds(3))
+        // 第二次 SET 是当前角度，相机不再挂着够不着的目标，之后松开摇杆。
+        XCTAssertEqual(wire.moves, [.setAngle, .setAngle, .move])
+        XCTAssertEqual(wire.angle, .init(pitch: 10, yaw: 60))
+
+        // 停在尽头后仍能记忆位置，下一次定位也不会卡在等待上。
+        let saved = try await commands.readPosition(cameraID: cameraID)
+        XCTAssertEqual(saved.yaw, 60, accuracy: 0.01)
+        wire.moves = []
+        let again = try await commands.restore(saved, currentFlip: nil)
+        XCTAssertEqual(again, .arrived)
+        XCTAssertTrue(wire.moves.isEmpty)
+    }
+
+    /// 贴着尽头的记忆点：角度到了但相机不报完成，也算到位，并清掉挂着的目标。
+    @MainActor
+    func testGimbalRestoreArrivesAtAnEdgePointThatNeverReportsDone() async throws {
+        let wire = GimbalWire()
+        wire.yawStop = 60
+        wire.angle = .init(pitch: 1, yaw: 5)
+        let edge = try XCTUnwrap(ConsoleGimbalPosition(cameraID: UUID(), yaw: 60.3, pitch: 10))
+        let result = try await wire.commands().restore(edge, currentFlip: nil)
+        XCTAssertEqual(result, .arrived)
+        XCTAssertEqual(wire.moves, [.setAngle, .setAngle, .move])
+        XCTAssertEqual(wire.angle.grf, 0)
+    }
+
+    /// 相机报限位时立刻结束，不等云台停转。
+    @MainActor
+    func testGimbalRestoreEndsAsSoonAsTheLimitIsReported() async throws {
+        let wire = GimbalWire()
+        wire.yawStop = 60
+        wire.angle = .init(pitch: 1, yaw: 5)
+        var commands = wire.commands()
+        commands.atAxisLimit = { wire.angle.grf != 0 }
+        let beyond = try XCTUnwrap(ConsoleGimbalPosition(cameraID: UUID(), yaw: 100, pitch: 10))
+        let clock = ContinuousClock()
+        let started = clock.now
+        let result = try await commands.restore(beyond, currentFlip: nil)
+        XCTAssertEqual(result, .axisLimit)
+        XCTAssertLessThan(clock.now - started, .seconds(1))
+        XCTAssertEqual(wire.moves, [.setAngle, .setAngle, .move])
     }
 
     @MainActor
@@ -732,6 +791,8 @@ private final class GimbalWire {
     var isFlipped = false
     var angle = LunaGimbalAngle(pitch: 10, yaw: 20)
     var moves: [LunaGimbalAction] = []
+    /// 偏航行程尽头。目标超过它时云台停在这里，GET 一直回 grf = 1，和真机够不着目标时一样。
+    var yawStop: Float?
 
     func commands() -> ConsoleGimbalCommands {
         let session = LunaCameraSession(send: { try self.send($0) }, functionMode: { 7 }, readSettings: {}, readCapture: {})
@@ -745,7 +806,8 @@ private final class GimbalWire {
         let action = try XCTUnwrap(LunaGimbalAction(rawValue: body.unsigned(1)))
         switch action {
         case .getAngle:
-            return try ProtoMessage.float(field: 3, value: angle.pitch) + ProtoMessage.float(field: 4, value: angle.yaw)
+            let pose = try ProtoMessage.float(field: 3, value: angle.pitch) + ProtoMessage.float(field: 4, value: angle.yaw)
+            return try angle.grf == 0 ? pose : ProtoMessage.integer(field: 1, value: UInt64(angle.grf)) + pose
         case .flip:
             isFlipped.toggle()
             angle = .init(pitch: 0, yaw: isFlipped ? 180 : 0)
@@ -753,7 +815,9 @@ private final class GimbalWire {
             return Data()
         case .setAngle:
             let target = try ProtoMessage(body.bytes(5))
-            angle = try .init(pitch: target.float(2), yaw: target.float(3))
+            let yaw = try target.float(3)
+            let reachable = yawStop.map { yaw <= $0 } ?? true
+            angle = try .init(grf: reachable ? 0 : 1, pitch: target.float(2), yaw: reachable ? yaw : yawStop ?? yaw)
             moves.append(action)
             return try ProtoMessage.integer(field: 1, value: 1)
         case .move:

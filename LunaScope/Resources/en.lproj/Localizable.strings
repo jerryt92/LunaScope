@@ -148,7 +148,7 @@
 
 "console.error.gimbalPosition" = "The gimbal is moving, outside its range, or did not confirm arrival.";
 
-"console.error.gimbalRestore" = "Could not restore the saved gimbal position";
+"console.error.gimbalRestore" = "Could not move to the saved point";
 
 "console.error.gimbalSave" = "Could not save the gimbal position";
 

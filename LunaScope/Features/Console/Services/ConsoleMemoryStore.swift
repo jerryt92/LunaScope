@@ -68,9 +68,10 @@ struct ConsoleGimbalPosition: Codable, Equatable {
         self.isFlipped = isFlipped
     }
 
+    /// 回读角度是否就在记忆点上。只比角度：记忆点贴着行程尽头时，相机即使到了也可能一直回 grf = 1。
     func matchesAngles(_ angle: LunaGimbalAngle) -> Bool {
         let tolerance = LunaCameraSession.motion.arrivalToleranceDeg
-        return angle.grf == 0 && abs((Double(angle.yaw) - yaw).remainder(dividingBy: 360)) <= tolerance
+        return abs((Double(angle.yaw) - yaw).remainder(dividingBy: 360)) <= tolerance
             && abs(Double(angle.pitch) - pitch) <= tolerance
     }
 }
