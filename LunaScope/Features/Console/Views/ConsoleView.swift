@@ -751,43 +751,16 @@ struct ConsoleView: View {
     }
 
     private var shootingModeMenu: some View {
-        Menu {
-            Section("console.mode.videoFamily") {
-                ForEach((camera.cameraProfile?.captureModes ?? []).filter { !$0.native.isPhoto }) { mode in
-                    shootingModeChoice(mode.native)
-                }
-            }
-            Section("console.mode.photoFamily") {
-                ForEach((camera.cameraProfile?.captureModes ?? []).filter { $0.native.isPhoto }) { mode in
-                    if mode == .photo {
-                        Button {
-                            camera.setMode(.photo)
-                        } label: {
-                            if camera.shootingMode == .photo, !camera.continuousPhoto {
-                                Label(mode.native.label, systemImage: "checkmark")
-                            } else {
-                                Text(mode.native.label)
-                            }
-                        }
-                        Button {
-                            camera.setContinuousPhotoMode()
-                        } label: {
-                            if camera.continuousPhoto {
-                                Label("console.mode.continuousPhoto", systemImage: "checkmark")
-                            } else {
-                                Text("console.mode.continuousPhoto")
-                            }
-                        }
-                    } else {
-                        shootingModeChoice(mode.native)
-                    }
-                }
-            }
-        } label: {
-            ConsoleMenuLabel(title: "console.mode.switch", value: camera.modeLabel)
-        }
-        .consoleMenu(camera.canEditShootingSettings && !camera.continuousShooting)
-        .accessibilityIdentifier("console.mode.menu")
+        ShootingModeMenu(
+            modes: camera.cameraProfile?.captureModes ?? [],
+            shootingMode: camera.shootingMode,
+            continuousPhoto: camera.continuousPhoto,
+            enabled: camera.canEditShootingSettings && !camera.continuousShooting,
+            modeLabel: camera.modeLabel,
+            setMode: camera.setMode,
+            setContinuous: camera.setContinuousPhotoMode
+        )
+        .equatable()
     }
 
     private var continuousIntervalMenu: some View {
@@ -823,18 +796,6 @@ struct ConsoleView: View {
         }
         .consoleMenu(camera.canEditShootingSettings || camera.continuousShooting)
         .accessibilityIdentifier("console.interval.menu")
-    }
-
-    private func shootingModeChoice(_ mode: LunaShootingMode) -> some View {
-        Button {
-            camera.setMode(mode)
-        } label: {
-            if camera.shootingMode == mode, !camera.continuousPhoto {
-                Label(mode.label, systemImage: "checkmark")
-            } else {
-                Text(mode.label)
-            }
-        }
     }
 
     private var pictureInPictureButton: some View {
@@ -924,37 +885,20 @@ struct ConsoleView: View {
 
     /// 云台位置二级菜单。记忆会先确认，避免直接覆盖已保存的角度。
     private var gimbalPositionMenu: some View {
-        let enabled = camera.canRememberGimbal
-        return Menu {
-            Button {
+        GimbalPositionMenu(
+            enabled: camera.canRememberGimbal,
+            canRestore: camera.savedGimbalForCamera != nil,
+            buttonHeight: Layout.gimbalButton,
+            remember: {
                 // 等菜单收起再弹确认，否则本次点击会被菜单关闭吃掉。
                 Task { @MainActor in
                     try? await Task.sleep(for: .milliseconds(250))
                     confirmsGimbalSave = true
                 }
-            } label: {
-                Label("console.gimbal.remember", systemImage: "bookmark")
-            }
-            .accessibilityIdentifier("console.gimbal.savePosition")
-            Button(action: camera.restoreGimbalPosition) {
-                Label("console.gimbal.restore", systemImage: "location")
-            }
-            .disabled(camera.savedGimbalForCamera == nil)
-            .accessibilityIdentifier("console.gimbal.restorePosition")
-        } label: {
-            Label("console.gimbal.position", systemImage: "mappin.and.ellipse")
-                .labelStyle(.titleAndIcon)
-                .font(.caption.weight(.semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-                .frame(maxWidth: .infinity, minHeight: Layout.gimbalButton)
-                .foregroundStyle(enabled ? Palette.accent : Palette.secondary)
-                .background(Palette.field, in: RoundedRectangle(cornerRadius: 9))
-                .contentShape(Rectangle())
-        }
-        .menuOrder(.fixed)
-        .disabled(!enabled)
-        .accessibilityIdentifier("console.gimbal.position")
+            },
+            restore: camera.restoreGimbalPosition
+        )
+        .equatable()
     }
 
     /// 云台模式入口。按钮只写标题，当前模式在菜单里用勾表示。
@@ -962,36 +906,10 @@ struct ConsoleView: View {
         var seen = Set<LunaGimbalMode>()
         let modes = camera.cameraProfile?.gimbalChoices
             ?? ConsoleCameraProfile.bundled.flatMap(\.gimbalChoices).filter { seen.insert($0).inserted }
-        let current = camera.gimbalMode
-        let enabled = camera.canEditGimbalMode
-        return Menu {
-            ForEach(modes, id: \.self) { mode in
-                Button {
-                    camera.setGimbalMode(mode)
-                } label: {
-                    if mode == current {
-                        Label(mode.label, systemImage: "checkmark")
-                    } else {
-                        Text(mode.label)
-                    }
-                }
-                .accessibilityIdentifier("console.gimbal.mode.\(mode.rawValue)")
-            }
-        } label: {
-            Label("console.gimbal.mode", systemImage: "gyroscope")
-                .labelStyle(.titleAndIcon)
-                .font(.caption.weight(.semibold))
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-                .frame(maxWidth: .infinity, minHeight: Layout.gimbalButton)
-            .foregroundStyle(enabled ? Palette.accent : Palette.secondary)
-            .background(Palette.field, in: RoundedRectangle(cornerRadius: 9))
-            .contentShape(Rectangle())
-        }
-        .disabled(!enabled)
-        .accessibilityLabel("console.gimbal.mode")
-        .accessibilityValue(Text(current?.label ?? "—"))
-        .accessibilityIdentifier("console.gimbal.mode.menu")
+        return GimbalModeMenu(modes: modes, current: camera.gimbalMode,
+                               enabled: camera.canEditGimbalMode, buttonHeight: Layout.gimbalButton,
+                               setMode: camera.setGimbalMode)
+            .equatable()
     }
 
     private func gimbalAimButton(_ title: LocalizedStringKey, icon: String, recenter: Bool) -> some View {
@@ -1032,6 +950,156 @@ struct ConsoleView: View {
         .accessibilityIdentifier("console.settings.focus")
     }
 
+}
+
+/// 菜单项始终是同一种标签。勾选只改透明度，避免菜单打开时整项重建闪烁。
+private struct CheckedMenuTitle: View {
+    let title: String
+    let selected: Bool
+
+    var body: some View {
+        Label {
+            Text(title)
+        } icon: {
+            Image(systemName: "checkmark").opacity(selected ? 1 : 0)
+        }
+    }
+}
+
+/// 拍摄模式菜单。只在选项或当前模式变化时重绘，拍摄页的其它刷新不会碰到菜单内容。
+private struct ShootingModeMenu: View, Equatable {
+    let modes: [ConsoleCaptureMode]
+    let shootingMode: LunaShootingMode?
+    let continuousPhoto: Bool
+    let enabled: Bool
+    let modeLabel: String
+    let setMode: (LunaShootingMode) -> Void
+    let setContinuous: () -> Void
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.modes == rhs.modes && lhs.shootingMode == rhs.shootingMode
+            && lhs.continuousPhoto == rhs.continuousPhoto && lhs.enabled == rhs.enabled
+            && lhs.modeLabel == rhs.modeLabel
+    }
+
+    var body: some View {
+        let video = modes.filter { !$0.native.isPhoto }
+        let photo = modes.filter(\.native.isPhoto)
+        Menu {
+            Section("console.mode.videoFamily") {
+                ForEach(video) { mode in
+                    modeButton(mode.native)
+                }
+            }
+            Section("console.mode.photoFamily") {
+                ForEach(photo) { mode in
+                    if mode == .photo {
+                        Button { setMode(.photo) } label: {
+                            CheckedMenuTitle(title: mode.native.label,
+                                             selected: shootingMode == .photo && !continuousPhoto)
+                        }
+                        Button(action: setContinuous) {
+                            CheckedMenuTitle(title: String(localized: "console.mode.continuousPhoto"),
+                                             selected: continuousPhoto)
+                        }
+                    } else {
+                        modeButton(mode.native)
+                    }
+                }
+            }
+        } label: {
+            ConsoleMenuLabel(title: "console.mode.switch", value: modeLabel)
+        }
+        .consoleMenu(enabled)
+        .accessibilityIdentifier("console.mode.menu")
+    }
+
+    /// 单个拍摄模式。当前模式显示勾。
+    private func modeButton(_ mode: LunaShootingMode) -> some View {
+        Button { setMode(mode) } label: {
+            CheckedMenuTitle(title: mode.label, selected: shootingMode == mode && !continuousPhoto)
+        }
+    }
+}
+
+/// 云台模式菜单。勾选行结构固定，父视图刷新时内容不重建。
+private struct GimbalModeMenu: View, Equatable {
+    let modes: [LunaGimbalMode]
+    let current: LunaGimbalMode?
+    let enabled: Bool
+    let buttonHeight: CGFloat
+    let setMode: (LunaGimbalMode) -> Void
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.modes == rhs.modes && lhs.current == rhs.current && lhs.enabled == rhs.enabled
+            && lhs.buttonHeight == rhs.buttonHeight
+    }
+
+    var body: some View {
+        Menu {
+            ForEach(modes, id: \.self) { mode in
+                Button { setMode(mode) } label: {
+                    CheckedMenuTitle(title: mode.label, selected: mode == current)
+                }
+                .accessibilityIdentifier("console.gimbal.mode.\(mode.rawValue)")
+            }
+        } label: {
+            Label("console.gimbal.mode", systemImage: "gyroscope")
+                .labelStyle(.titleAndIcon)
+                .font(.caption.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .frame(maxWidth: .infinity, minHeight: buttonHeight)
+                .foregroundStyle(enabled ? Palette.accent : Palette.secondary)
+                .background(Palette.field, in: RoundedRectangle(cornerRadius: 9))
+                .contentShape(Rectangle())
+        }
+        .menuOrder(.fixed)
+        .disabled(!enabled)
+        .accessibilityLabel("console.gimbal.mode")
+        .accessibilityValue(Text(current?.label ?? "—"))
+        .accessibilityIdentifier("console.gimbal.mode.menu")
+    }
+}
+
+/// 云台位置菜单。记忆和恢复两项固定，不跟着拍摄页重绘。
+private struct GimbalPositionMenu: View, Equatable {
+    let enabled: Bool
+    let canRestore: Bool
+    let buttonHeight: CGFloat
+    let remember: () -> Void
+    let restore: () -> Void
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.enabled == rhs.enabled && lhs.canRestore == rhs.canRestore && lhs.buttonHeight == rhs.buttonHeight
+    }
+
+    var body: some View {
+        Menu {
+            Button(action: remember) {
+                Label("console.gimbal.remember", systemImage: "bookmark")
+            }
+            .accessibilityIdentifier("console.gimbal.savePosition")
+            Button(action: restore) {
+                Label("console.gimbal.restore", systemImage: "location")
+            }
+            .disabled(!canRestore)
+            .accessibilityIdentifier("console.gimbal.restorePosition")
+        } label: {
+            Label("console.gimbal.position", systemImage: "mappin.and.ellipse")
+                .labelStyle(.titleAndIcon)
+                .font(.caption.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.75)
+                .frame(maxWidth: .infinity, minHeight: buttonHeight)
+                .foregroundStyle(enabled ? Palette.accent : Palette.secondary)
+                .background(Palette.field, in: RoundedRectangle(cornerRadius: 9))
+                .contentShape(Rectangle())
+        }
+        .menuOrder(.fixed)
+        .disabled(!enabled)
+        .accessibilityIdentifier("console.gimbal.position")
+    }
 }
 
 /// 在控制台和校准页间复用实时视频层。

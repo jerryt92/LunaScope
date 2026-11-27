@@ -265,7 +265,8 @@ final class CameraController {
         }
         backend.onCapture = { [weak self] status in
             guard let self else { return }
-            capture = status
+            // 拍摄状态轮询很频繁，内容没变就不要通知界面，否则打开的菜单会跟着重绘闪烁。
+            if capture != status { capture = status }
             lastCaptureReportAt = .now
             startSettingWrites()
         }

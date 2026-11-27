@@ -50,7 +50,8 @@ struct ConsoleZoomControls: View {
                         .frame(width: pitch)
                         .position(x: x, y: 60)
                 }
-                if let zoom, let thumbX, scale.stops.allSatisfy({ abs($0 - zoom) >= Self.tenth / 2 }) {
+                // 滑块在预设点上和在中间倍数上一样大，盖在预设圆点上面。
+                if let thumbX {
                     Circle()
                         .fill(Palette.accent)
                         .overlay { Circle().strokeBorder(Color.white, lineWidth: 2) }
