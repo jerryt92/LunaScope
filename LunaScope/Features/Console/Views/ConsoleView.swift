@@ -764,38 +764,17 @@ struct ConsoleView: View {
     }
 
     private var continuousIntervalMenu: some View {
-        Menu {
-            ForEach(ConsoleShootInterval.presets, id: \.self) { seconds in
-                Button {
-                    camera.setContinuousInterval(ConsoleShootInterval(selection: .preset(seconds)))
-                } label: {
-                    let selected = !camera.continuousInterval.isCustom
-                        && abs(camera.continuousInterval.seconds - seconds) < 0.001
-                    let title = ConsoleShootInterval(selection: .preset(seconds)).summaryLabel
-                    if selected {
-                        Label(title, systemImage: "checkmark")
-                    } else {
-                        Text(title)
-                    }
-                }
-            }
-            Button {
+        ContinuousIntervalMenu(
+            interval: camera.continuousInterval,
+            enabled: camera.canEditShootingSettings || camera.continuousShooting,
+            setPreset: { camera.setContinuousInterval(ConsoleShootInterval(selection: .preset($0))) },
+            showCustom: {
                 customIntervalDraft = ""
                 customIntervalUnit = .seconds
                 showsCustomInterval = true
-            } label: {
-                if camera.continuousInterval.isCustom {
-                    Label("console.interval.custom", systemImage: "checkmark")
-                } else {
-                    Text("console.interval.custom")
-                }
             }
-        } label: {
-            ConsoleMenuLabel(title: "console.interval.title",
-                             value: camera.continuousInterval.summaryLabel)
-        }
-        .consoleMenu(camera.canEditShootingSettings || camera.continuousShooting)
-        .accessibilityIdentifier("console.interval.menu")
+        )
+        .equatable()
     }
 
     private var pictureInPictureButton: some View {
@@ -952,17 +931,44 @@ struct ConsoleView: View {
 
 }
 
-/// 菜单项始终是同一种标签。勾选只改透明度，避免菜单打开时整项重建闪烁。
-private struct CheckedMenuTitle: View {
-    let title: String
-    let selected: Bool
+/// 只有当前项带勾。未选项不能放 checkmark 图标，系统菜单会把它画成已选。
+@ViewBuilder
+private func menuChoice(_ title: String, selected: Bool) -> some View {
+    if selected {
+        Label(title, systemImage: "checkmark")
+    } else {
+        Text(title)
+    }
+}
+
+/// 拍摄间隔菜单。只在当前间隔或能否编辑变化时重绘。
+private struct ContinuousIntervalMenu: View, Equatable {
+    let interval: ConsoleShootInterval
+    let enabled: Bool
+    let setPreset: (TimeInterval) -> Void
+    let showCustom: () -> Void
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.interval == rhs.interval && lhs.enabled == rhs.enabled
+    }
 
     var body: some View {
-        Label {
-            Text(title)
-        } icon: {
-            Image(systemName: "checkmark").opacity(selected ? 1 : 0)
+        Menu {
+            ForEach(ConsoleShootInterval.presets, id: \.self) { seconds in
+                let choice = ConsoleShootInterval(selection: .preset(seconds))
+                Button { setPreset(seconds) } label: {
+                    menuChoice(choice.summaryLabel,
+                               selected: !interval.isCustom && abs(interval.seconds - seconds) < 0.001)
+                }
+            }
+            Button(action: showCustom) {
+                menuChoice(String(localized: "console.interval.custom"), selected: interval.isCustom)
+            }
+        } label: {
+            ConsoleMenuLabel(title: "console.interval.title", value: interval.summaryLabel)
         }
+        .consoleMenu(enabled)
+        .accessibilityIdentifier("console.interval.menu")
     }
 }
 
@@ -995,12 +1001,10 @@ private struct ShootingModeMenu: View, Equatable {
                 ForEach(photo) { mode in
                     if mode == .photo {
                         Button { setMode(.photo) } label: {
-                            CheckedMenuTitle(title: mode.native.label,
-                                             selected: shootingMode == .photo && !continuousPhoto)
+                            menuChoice(mode.native.label, selected: shootingMode == .photo && !continuousPhoto)
                         }
                         Button(action: setContinuous) {
-                            CheckedMenuTitle(title: String(localized: "console.mode.continuousPhoto"),
-                                             selected: continuousPhoto)
+                            menuChoice(String(localized: "console.mode.continuousPhoto"), selected: continuousPhoto)
                         }
                     } else {
                         modeButton(mode.native)
@@ -1017,7 +1021,7 @@ private struct ShootingModeMenu: View, Equatable {
     /// 单个拍摄模式。当前模式显示勾。
     private func modeButton(_ mode: LunaShootingMode) -> some View {
         Button { setMode(mode) } label: {
-            CheckedMenuTitle(title: mode.label, selected: shootingMode == mode && !continuousPhoto)
+            menuChoice(mode.label, selected: shootingMode == mode && !continuousPhoto)
         }
     }
 }
@@ -1039,7 +1043,7 @@ private struct GimbalModeMenu: View, Equatable {
         Menu {
             ForEach(modes, id: \.self) { mode in
                 Button { setMode(mode) } label: {
-                    CheckedMenuTitle(title: mode.label, selected: mode == current)
+                    menuChoice(mode.label, selected: mode == current)
                 }
                 .accessibilityIdentifier("console.gimbal.mode.\(mode.rawValue)")
             }

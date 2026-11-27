@@ -129,7 +129,9 @@ struct ConsoleCameraProfile: Decodable {
         let iso: [UInt64]
         /// Auto ISO 上限档（界面显示为 400Max 等）；缺省时取 ISO 列表中 ≥400 的值。
         private let isoMaxValues: [UInt64]?
-        let shutterDenominators: [Int]
+        /// 快门分母，可带小数。8000 是 1/8000 秒，12.5 是 1/12.5 秒，1.67 是 1/1.67 秒。
+        let shutterDenominators: [Double]
+        /// 一秒及更慢的快门，单位为秒。
         let longPhotoShutters: [Double]
         let slowVideoShutter: SlowVideoShutter?
 
@@ -254,14 +256,11 @@ struct ConsoleCameraProfile: Decodable {
         return LunaColorMode(rawValue: value)
     }
 
+    /// 官方快门刻度。拍照和录像用同一条，自动档由界面加在最前面。
     func shutterChoices(mode: LunaShootingMode, format: UInt64?, firmware: String? = nil) -> [Double] {
+        _ = (mode, format, firmware)
         let denominators = exposure.shutterDenominators.filter { $0 > 0 }
-        if mode == .photo { return denominators.map { 1 / Double($0) } + exposure.longPhotoShutters }
-        guard !mode.isPhoto, let format, supports(format, in: mode),
-              let video = videoFormat(format) else { return [] }
-        let allowsSlowShutter = mode == .video && exposure.slowVideoShutter?.allows(format: format, firmware: firmware) == true
-        let minimumDenominator = allowsSlowShutter ? 5 : video.framesPerSecond
-        return denominators.filter { Double($0) >= minimumDenominator }.map { 1 / Double($0) }
+        return denominators.map { 1 / $0 } + exposure.longPhotoShutters
     }
 
     func zoomRule(mode: LunaShootingMode, format: UInt64?) -> ZoomRule? {

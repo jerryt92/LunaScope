@@ -626,12 +626,25 @@ struct ConsoleManualExposure {
         String(localized: "console.settings.isoMax \(value)")
     }
 
+    /// 不足 1 秒写成 1/分母，12.5、6.25、1.67 这类小数分母保留；满 1 秒写成秒。
     nonisolated static func shutterLabel(_ seconds: Double) -> String {
-        let denominator = 1 / seconds
-        if seconds < 1, abs(denominator.rounded() - denominator) < 0.01 {
-            return "1/\(Int(denominator.rounded()))"
+        guard seconds > 0 else { return "—" }
+        if seconds >= 1 {
+            let tenths = (seconds * 10).rounded() / 10
+            let text = abs(tenths - tenths.rounded()) < 0.001
+                ? String(Int(tenths.rounded()))
+                : String(format: "%.1f", tenths)
+            return String(localized: "console.settings.seconds \(text)")
         }
-        let value = seconds.formatted(.number.precision(.fractionLength(0...4)))
-        return String(localized: "console.settings.seconds \(value)")
+        let denominator = ((1 / seconds) * 100).rounded() / 100
+        let text: String
+        if abs(denominator - denominator.rounded()) < 0.001 {
+            text = String(Int(denominator.rounded()))
+        } else if abs(denominator * 10 - (denominator * 10).rounded()) < 0.001 {
+            text = String(format: "%.1f", denominator)
+        } else {
+            text = String(format: "%.2f", denominator)
+        }
+        return "1/\(text)"
     }
 }

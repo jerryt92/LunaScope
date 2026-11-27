@@ -62,6 +62,48 @@ final class ConsoleControlsTests: XCTestCase {
         }
     }
 
+    /// 快门按官方口播刻度，色温 2000–10000、每 200 K 一档。
+    @MainActor
+    func testExposureRulersMatchOfficialApp() throws {
+        let ultra = try ultraProfile()
+        let pro = try XCTUnwrap(ConsoleCameraProfile.matching("Insta360 Luna Pro"))
+        let photo = ultra.shutterChoices(mode: .photo, format: nil)
+        let videoFormat = try XCTUnwrap(ultra.video(for: .video).first { $0.framesPerSecond == 25 })
+        let video = ultra.shutterChoices(mode: .video, format: videoFormat.rawValue)
+        XCTAssertEqual(photo, video)
+        XCTAssertEqual(photo, pro.shutterChoices(mode: .photo, format: nil))
+        XCTAssertEqual(try XCTUnwrap(photo.first), 1.0 / 8000, accuracy: 0.000_000_1)
+        XCTAssertEqual(try XCTUnwrap(photo.last), 30, accuracy: 0.001)
+        XCTAssertTrue(photo.contains { abs($0 - 1.0 / 240) < 0.000_000_1 })
+        XCTAssertTrue(photo.contains { abs($0 - 1.0 / 120) < 0.000_000_1 })
+        XCTAssertTrue(photo.contains { abs($0 - 1.0 / 12.5) < 0.000_000_1 })
+        XCTAssertTrue(photo.contains { abs($0 - 1.0 / 6.25) < 0.000_000_1 })
+        XCTAssertTrue(photo.contains { abs($0 - 1.0 / 1.67) < 0.000_01 })
+        XCTAssertTrue(photo.contains { abs($0 - 7) < 0.001 })
+        XCTAssertTrue(photo.contains { abs($0 - 9) < 0.001 })
+        XCTAssertFalse(photo.contains { abs($0 - 0.25) < 0.001 })
+        XCTAssertEqual(ConsoleManualExposure.shutterLabel(1.0 / 12.5), "1/12.5")
+        XCTAssertEqual(ConsoleManualExposure.shutterLabel(1.0 / 6.25), "1/6.25")
+        XCTAssertEqual(ConsoleManualExposure.shutterLabel(1.0 / 2.5), "1/2.5")
+        XCTAssertEqual(ConsoleManualExposure.shutterLabel(1.0 / 1.67), "1/1.67")
+        XCTAssertEqual(ConsoleManualExposure.shutterLabel(1.0 / 1.25), "1/1.25")
+        XCTAssertTrue(ConsoleManualExposure.shutterLabel(1.3).contains("1.3"))
+        XCTAssertTrue(ConsoleManualExposure.shutterLabel(3.2).contains("3.2"))
+        XCTAssertTrue(ConsoleManualExposure.shutterLabel(7).hasPrefix("7"))
+        XCTAssertFalse(ConsoleManualExposure.shutterLabel(7).contains("."))
+
+        let iso: [UInt64] = [100, 125, 160, 200, 250, 320, 400, 500, 640, 800, 1000, 1250, 1600, 2000, 2500, 3200, 6400]
+        XCTAssertEqual(ultra.exposure.iso, iso)
+        XCTAssertEqual(pro.exposure.iso, iso)
+        XCTAssertEqual(ultra.exposure.isoMax, [400, 800, 1600, 3200, 6400])
+
+        XCTAssertEqual(ultra.whiteBalance.choices.first, 2000)
+        XCTAssertEqual(ultra.whiteBalance.choices.last, 10000)
+        XCTAssertEqual(ultra.whiteBalance.choices, pro.whiteBalance.choices)
+        XCTAssertEqual(ultra.whiteBalance.choices.count, 41)
+        XCTAssertFalse(ultra.whiteBalance.choices.contains(2100))
+    }
+
     @MainActor
     func testPresetStoreRoundTripsMultipleNamedSetsAndOnlyTheLatestPosition() throws {
         let suite = "ConsoleControlsTests." + UUID().uuidString
