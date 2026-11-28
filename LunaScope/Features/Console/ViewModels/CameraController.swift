@@ -960,13 +960,14 @@ final class CameraController {
     }
 
     /// 转到这一轮连拍记下的角度，并等到转动结束。不弹手动定位的提示。
+    /// 每一张都精确对回同一个角度；只在偏出 0.5° 才纠正的话，成片会先慢慢偏、再突然跳回。
     private func returnContinuousGimbal(
         _ position: ConsoleGimbalPosition, through target: LunaCameraSession
     ) async throws {
         try await stopSubjectTracking(through: target)
         var commands = gimbalCommands(through: target)
         commands.atAxisLimit = { self.gimbalWasAtLimit }
-        _ = try await commands.restore(position, currentFlip: gimbalIsFlipped, travelLimit: .seconds(60))
+        _ = try await commands.restore(position, currentFlip: gimbalIsFlipped, travelLimit: .seconds(60), exact: true)
         if gimbalSleeping { try? await wakeGimbalSequence(target) }
     }
 

@@ -359,6 +359,53 @@ final class ConsoleControlsTests: XCTestCase {
         XCTAssertEqual(wire.angle.grf, 0)
     }
 
+    /// 延时摄影的归位：0.5° 以内普通定位不动，精确归位要把这点偏差也对回去。
+    @MainActor
+    func testExactGimbalRestoreCorrectsDriftInsideTheNormalTolerance() async throws {
+        let wire = GimbalWire()
+        let commands = wire.commands()
+        let start = try XCTUnwrap(ConsoleGimbalPosition(cameraID: UUID(), yaw: 20, pitch: 10))
+
+        wire.angle = .init(pitch: 10.2, yaw: 20.3)
+        let coarse = try await commands.restore(start, currentFlip: nil)
+        XCTAssertEqual(coarse, .arrived)
+        XCTAssertTrue(wire.moves.isEmpty)
+        XCTAssertEqual(wire.angle, .init(pitch: 10.2, yaw: 20.3))
+
+        let exact = try await commands.restore(start, currentFlip: nil, exact: true)
+        XCTAssertEqual(exact, .arrived)
+        XCTAssertEqual(wire.moves, [.setAngle])
+        XCTAssertEqual(wire.angle, .init(pitch: 10, yaw: 20))
+
+        // 已经分毫不差时不再发转角。
+        wire.moves = []
+        let again = try await commands.restore(start, currentFlip: nil, exact: true)
+        XCTAssertEqual(again, .arrived)
+        XCTAssertTrue(wire.moves.isEmpty)
+
+        // 偏得远：先转到附近，再对准。两步落在同一个角度上。
+        wire.angle = .init(pitch: 1, yaw: 5)
+        let far = try await commands.restore(start, currentFlip: nil, exact: true)
+        XCTAssertEqual(far, .arrived)
+        XCTAssertEqual(wire.angle, .init(pitch: 10, yaw: 20))
+    }
+
+    /// 精确归位的目标贴着行程尽头、相机一直不报完成：不能每张都等满超时，挂着的目标也要清掉。
+    @MainActor
+    func testExactGimbalRestoreGivesUpAtAnEdgePoint() async throws {
+        let wire = GimbalWire()
+        wire.yawStop = 60
+        wire.angle = .init(pitch: 10, yaw: 60)
+        let edge = try XCTUnwrap(ConsoleGimbalPosition(cameraID: UUID(), yaw: 60.3, pitch: 10))
+        let clock = ContinuousClock()
+        let started = clock.now
+        let result = try await wire.commands().restore(edge, currentFlip: nil, exact: true)
+        XCTAssertEqual(result, .arrived)
+        XCTAssertLessThan(clock.now - started, .seconds(3))
+        XCTAssertEqual(wire.moves, [.setAngle, .setAngle, .move])
+        XCTAssertEqual(wire.angle.grf, 0)
+    }
+
     /// 相机报限位时立刻结束，不等云台停转。
     @MainActor
     func testGimbalRestoreEndsAsSoonAsTheLimitIsReported() async throws {

@@ -38,9 +38,11 @@ struct ConsoleGimbalCommands {
     /// - Parameter currentFlip: 本会话确认过的朝向；nil 表示还没按过回中或翻转，不参与比对。
     /// - Returns: 到位、翻转不一致，或在限位停下。
     /// - Parameter travelLimit: 转到目标的最长等待。幅度大时调用方可以放宽，避免转到一半就超时。
+    /// - Parameter exact: 延时摄影用。0.5° 以内也要对回同一个角度，不能当作已经到位。
     @discardableResult
     func restore(
-        _ position: ConsoleGimbalPosition, currentFlip: Bool?, travelLimit: Duration = .seconds(10)
+        _ position: ConsoleGimbalPosition, currentFlip: Bool?, travelLimit: Duration = .seconds(10),
+        exact: Bool = false
     ) async throws -> ConsoleGimbalRestoreResult {
         // 没在本会话确认朝向时不比，避免重连后的空记录误报。一旦确认翻转，记忆里没写翻转也视为正向。
         if let currentFlip, (position.isFlipped ?? false) != currentFlip {
@@ -48,7 +50,10 @@ struct ConsoleGimbalCommands {
         }
         try await checkIdle()
         let start = try await waitUntilStill()
-        if position.matchesAngles(start) { return .arrived }
+        if position.matchesAngles(start) {
+            if exact { try await settleExactly(on: position) }
+            return .arrived
+        }
 
         let request = try LunaProtocol.gimbalSetAngle(pitch: Float(position.pitch), yaw: Float(position.yaw))
         let reply = try await control(request, timeout: .seconds(3))
@@ -61,7 +66,41 @@ struct ConsoleGimbalCommands {
             throw error
         }
         await finishMove(reached: reached)
+        if reached, exact { try await settleExactly(on: position) }
         return reached ? .arrived : .axisLimit
+    }
+
+    /// 精确归位允许的偏差，也是判断微调后是否停稳的门槛。
+    private static let exactTolerance = 0.01
+
+    /// 已经在目标附近时，把目标角度原样再发一次，等相机报完成并停稳。
+    /// 普通定位只保证 0.5° 以内。延时摄影每张都差这么一点，成片就是先慢慢偏、偏够了再突然跳回。
+    private func settleExactly(on position: ConsoleGimbalPosition) async throws {
+        let before = try await readAngle()
+        let drift = position.deviation(of: before)
+        var last = before
+        if before.grf != 0 || !position.matchesAngles(before, tolerance: Self.exactTolerance) {
+            let request = try LunaProtocol.gimbalSetAngle(pitch: Float(position.pitch), yaw: Float(position.yaw))
+            let reply = try await control(request, timeout: .seconds(3))
+            guard !reply.isEmpty else { throw ControlError.cameraRefused }
+            let clock = ContinuousClock()
+            let deadline = clock.now.advanced(by: .seconds(4))
+            var stillReads = 0
+            while clock.now < deadline {
+                try await Task.sleep(for: .milliseconds(120))
+                let angle = try await readAngle()
+                stillReads = Self.isStill(last, angle, within: Self.exactTolerance) ? stillReads + 1 : 0
+                last = angle
+                if angle.grf == 0, stillReads >= 1, position.matchesAngles(angle, tolerance: Self.exactTolerance) { break }
+                // 相机没理会这次微调，或目标贴着限位一直不报完成：连续不动就不再等。
+                if stillReads >= 6 { break }
+            }
+        }
+        // 每张记一行：归位前偏了多少、归位后还差多少。导出诊断就能看到真机上的实际精度。
+        let rest = position.deviation(of: last)
+        AppLog.event(String(format: "gimbal.return drift=%.3f,%.3f rest=%.3f,%.3f grf=%d",
+                            drift.yaw, drift.pitch, rest.yaw, rest.pitch, last.grf))
+        if last.grf != 0 { await finishMove(reached: true) }
     }
 
     private func readAngle() async throws -> LunaGimbalAngle {
@@ -69,9 +108,9 @@ struct ConsoleGimbalCommands {
     }
 
     /// 两次回读之间几乎没动。
-    private static func isStill(_ first: LunaGimbalAngle, _ second: LunaGimbalAngle) -> Bool {
-        abs((Double(second.yaw) - Double(first.yaw)).remainder(dividingBy: 360)) <= 0.2
-            && abs(Double(second.pitch) - Double(first.pitch)) <= 0.2
+    private static func isStill(_ first: LunaGimbalAngle, _ second: LunaGimbalAngle, within limit: Double = 0.2) -> Bool {
+        abs((Double(second.yaw) - Double(first.yaw)).remainder(dividingBy: 360)) <= limit
+            && abs(Double(second.pitch) - Double(first.pitch)) <= limit
     }
 
     /// 连续两次回读几乎不变才算停稳，返回最后一次角度。追踪刚停、摇杆刚松时云台还会滑一小段。

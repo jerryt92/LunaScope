@@ -74,11 +74,18 @@ struct ConsoleGimbalPosition: Codable, Equatable {
         self.isFlipped = isFlipped
     }
 
+    /// 回读角度相对记忆点偏了多少度。偏航跨 ±180 时取近的一边。
+    func deviation(of angle: LunaGimbalAngle) -> (yaw: Double, pitch: Double) {
+        ((Double(angle.yaw) - yaw).remainder(dividingBy: 360), Double(angle.pitch) - pitch)
+    }
+
     /// 回读角度是否就在记忆点上。只比角度：记忆点贴着行程尽头时，相机即使到了也可能一直回 grf = 1。
-    func matchesAngles(_ angle: LunaGimbalAngle) -> Bool {
-        let tolerance = LunaCameraSession.motion.arrivalToleranceDeg
-        return abs((Double(angle.yaw) - yaw).remainder(dividingBy: 360)) <= tolerance
-            && abs(Double(angle.pitch) - pitch) <= tolerance
+    /// - Parameter tolerance: 允许的偏差，默认是普通定位的 0.5°。
+    func matchesAngles(
+        _ angle: LunaGimbalAngle, tolerance: Double = LunaCameraSession.motion.arrivalToleranceDeg
+    ) -> Bool {
+        let offset = deviation(of: angle)
+        return abs(offset.yaw) <= tolerance && abs(offset.pitch) <= tolerance
     }
 }
 
